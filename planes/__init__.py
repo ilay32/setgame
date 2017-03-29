@@ -316,7 +316,6 @@ class Plane:
            This method will highlight subplanes that have the Plane.mousover
            flag set.
         """
-
         # We only need to render if self.rendersurface does not point
         # to self.image.
         #
@@ -688,7 +687,8 @@ class Display(Plane):
            A pygame.font.Font instance using the system default font.
     """
 
-    def __init__(self, resolution_tuple, fullscreen = False):
+    #def __init__(self, resolution_tuple, fullscreen = False):
+    def __init__(self, frame, fullscreen = False):
         """Calling pygame.display.set_mode().
            If fullscreen is True, the display will use the full screen.
         """
@@ -696,6 +696,7 @@ class Display(Plane):
         # Init Pygame, just to be on the safe side.
         # pygame.init() can safely be called more than once.
         #
+        resolution_tuple = frame.get_size()
         pygame.init()
 
         flags = 0
@@ -705,8 +706,9 @@ class Display(Plane):
             flags = pygame.FULLSCREEN
 
         try:
-            self.display = pygame.display.set_mode(resolution_tuple, flags)
-
+            #self.display = pygame.display.set_mode(resolution_tuple, flags)
+            self.display = frame
+        
         except pygame.error:
 
             # Microsoft Windows SDL error: "No available video device"
@@ -717,7 +719,8 @@ class Display(Plane):
 
             os.environ['SDL_VIDEODRIVER'] = 'windib'
 
-            self.display = pygame.display.set_mode(resolution_tuple, flags)
+            #self.display = pygame.display.set_mode(resolution_tuple, flags)
+            self.display = frame
 
         Plane.__init__(self, "display", pygame.Rect((0, 0), resolution_tuple))
 
@@ -928,7 +931,7 @@ class Display(Plane):
         STATS.log_render_time(time.clock() - starttime)
 
         if rendered_something or force or self.dragged_plane is not None:
-
+            
             self.display.blit(self.rendersurface, (0, 0))
 
             if self.dragged_plane is not None:

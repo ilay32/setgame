@@ -602,7 +602,8 @@ class Display(Plane):
            A dict mapping Pygame mouse button numbers to description strings.
     """
 
-    def __init__(self, resolution_tuple, fullscreen = False):
+    #def __init__(self, resolution_tuple, fullscreen = False):
+    def __init__(self,frame):
         """Calling pygame.display.set_mode().
            If fullscreen is True, the display will use the full screen.
         """
@@ -619,7 +620,8 @@ class Display(Plane):
             flags = pygame.FULLSCREEN
 
         try:
-            self.display = pygame.display.set_mode(resolution_tuple, flags)
+            #self.display = pygame.display.set_mode(resolution_tuple, flags)
+            self.display = frame
 
         except pygame.error:
 
@@ -631,9 +633,12 @@ class Display(Plane):
 
             os.environ['SDL_VIDEODRIVER'] = 'windib'
 
-            self.display = pygame.display.set_mode(resolution_tuple, flags)
+            #self.display = pygame.display.set_mode(resolution_tuple, flags)
+            self.display = frame
 
-        Plane.__init__(self, "display", pygame.Rect((0, 0), resolution_tuple))
+
+        #Plane.__init__(self, "display", pygame.Rect((0, 0), resolution_tuple))
+        Plane.__init__(self, "display", pygame.Rect((0, 0), frame.get_size()))
 
         self.draggable = False
 
