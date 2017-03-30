@@ -604,18 +604,20 @@ It instantiates Game objects as needed but also contains home screen
 '''
 class Model:
 	def __init__ (self):
-		self.background = (20,20,20)
-		self.mode = MODE_HOME
+		self.background = (0,0,0)
+		self.mode = MODE_GAME
+		#self.mode = MODE_HOME
 		self.game_select = NOTIME
 
-		self.game = None
+		self.game = Game(NOTIME, self)
+		#self.game = None
 		self.actors = []
-		try:
-			times_file = open("times_file.txt","r")
-		except:
-			times_file = open("times_file.txt", "w+")
-		self.times = [int(score.strip()) for score in times_file.readlines()]
-		times_file.close()
+		#try:
+		#	times_file = open("times_file.txt","r")
+		#except:
+		#	times_file = open("times_file.txt", "w+")
+		#self.times = [int(score.strip()) for score in times_file.readlines()]
+		#times_file.close()
 		self.show_stats = [] # a list of things for stats screen
 
 		########################
