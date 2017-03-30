@@ -754,25 +754,26 @@ class View:
 			self.screen.sub (actor)
 
 # THE MAIN LOOP
-def play(frame,dur):
+def play(frame,dur,fullscreen):
     #if __name__ == "__main__":
     pygame.init()
     size = (WINDOW_WIDTH, WINDOW_HEIGHT)
     #screen = planes.Display(size)
-    screen = planes.Display(frame)
+    screen = planes.Display(frame,fullscreen)
     screen.grab = False
     screen.image.fill(BLACK)
     model = Model()
     view = View(model,screen)
     running = True
     pygame.time.set_timer(pygame.QUIT,dur)
+    ret = dict()
     while running:
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
                 #raise SystemExit
                 running = False
-                return {
+                ret =  {
                     "found" : view.model.game.sets_found,
                     "wrong" : view.model.game.sets_wrong
                 }
@@ -783,5 +784,5 @@ def play(frame,dur):
         view.draw()
         pygame.display.flip()
         time.sleep (.001)
-    #return ret
+    return ret
 #pygame.quit()
