@@ -9,8 +9,8 @@ import time
 from abc import ABCMeta, abstractmethod
 import planes
 import planes.gui
-import os
-
+import os,yaml
+from bidi.algorithm import get_display
 from class_utils import Button
 from class_utils import ScreenText
 
@@ -60,11 +60,11 @@ Args: card1, card2, card3 - objects of type Card
 Returns: True if cards form a Set, False otherwise
 '''
 def check_set (card1, card2, card3):
-	color_check = all_same_or_all_diff (card1.color, card2.color, card3.color)
-	shape_check = all_same_or_all_diff (card1.shape, card2.shape, card3.shape)
-	num_check = all_same_or_all_diff (card1.number, card2.number, card3.number)
-	shade_check = all_same_or_all_diff (card1.shade, card2.shade, card3.shade)
-	return color_check and shape_check and num_check and shade_check
+    color_check = all_same_or_all_diff (card1.color, card2.color, card3.color)
+    shape_check = all_same_or_all_diff (card1.shape, card2.shape, card3.shape)
+    num_check = all_same_or_all_diff (card1.number, card2.number, card3.number)
+    shade_check = all_same_or_all_diff (card1.shade, card2.shade, card3.shade)
+    return color_check and shape_check and num_check and shade_check
 
 '''
 Given three attributes (one from each of three cards), checks whether the
@@ -74,64 +74,64 @@ Args: attr1, attr2, attr3 - attributes of a card (color, shape, number, shade)
 Returns: True if all three attributes are equal OR none of them are equal, False otherwise
 '''
 def all_same_or_all_diff (attr1, attr2, attr3):
-	if attr1 == attr2 and attr2 == attr3:
-		return True
-	elif (attr1 != attr2) and (attr2 != attr3) and (attr3 != attr1):
-		return True
-	else:
-		return False
+    if attr1 == attr2 and attr2 == attr3:
+        return True
+    elif (attr1 != attr2) and (attr2 != attr3) and (attr3 != attr1):
+        return True
+    else:
+        return False
 
 '''
 Helper function, takes a game time in seconds and formats it into a human-readable string
 Returns string in format, for example: "1m 20s"
 '''
 def format_secs (secs):
-	minutes = secs / 60
-	seconds = secs % 60
-	return str (minutes) + "m " + str (seconds) + "s"
+    minutes = secs / 60
+    seconds = secs % 60
+    return str (minutes) + "m " + str (seconds) + "s"
 
 '''
 a Card has attributes of color, shape, number, and shade
 '''
 class Card (planes.Plane):
-	def __init__ (self, name, color, shape, number, shade):
-		planes.Plane.__init__ (self, name, pygame.Rect(0,0,CARD_WIDTH,CARD_HEIGHT), False, False)
-		self.color = color
-		self.shape = shape
-		self.number = number
-		self.shade = shade
-		self.been_clicked = False
-		
-	def __eq__ (self, other):
-		return  self.color == other.color and \
-				self.shape == other.shape and \
-				self.number == other.number and \
-				self.shade == other.shade
+    def __init__ (self, name, color, shape, number, shade):
+        planes.Plane.__init__ (self, name, pygame.Rect(0,0,CARD_WIDTH,CARD_HEIGHT), False, False)
+        self.color = color
+        self.shape = shape
+        self.number = number
+        self.shade = shade
+        self.been_clicked = False
 
-	def __ne__ (self, other):
-		return not self.__eq__(other)
-	
-	def clicked (self, button_name):
-		self.been_clicked = not self.been_clicked
+    def __eq__ (self, other):
+        return  self.color == other.color and \
+                self.shape == other.shape and \
+                self.number == other.number and \
+                self.shade == other.shade
 
-	def update (self):
-		pass
+    def __ne__ (self, other):
+        return not self.__eq__(other)
+
+    def clicked (self, button_name):
+        self.been_clicked = not self.been_clicked
+
+    def update (self):
+        pass
 
 '''
 The TimeBox is a box that serves as a timer, slowly moving down and filling the screen
 '''
 class TimeBox (planes.Plane):
-	def __init__ (self, name, rect, speed):
-		planes.Plane.__init__ (self, name, rect, False, False)
-		# time is time for box to move to bottom of screen in seconds
-		self.speed = speed
-		self.image.fill ((100,100,100))
-		self.counter = 1 # need this because it can't move by fractional pixels
+    def __init__ (self, name, rect, speed):
+        planes.Plane.__init__ (self, name, rect, False, False)
+        # time is time for box to move to bottom of screen in seconds
+        self.speed = speed
+        self.image.fill ((100,100,100))
+        self.counter = 1 # need this because it can't move by fractional pixels
 
-	def update (self):
-		self.counter += 1
-		if self.speed != 0 and self.rect.y < 0 and (self.counter % self.speed) == 0:
-			self.rect.y += 1
+    def update (self):
+        self.counter += 1
+        if self.speed != 0 and self.rect.y < 0 and (self.counter % self.speed) == 0:
+            self.rect.y += 1
 
 ##################
 # BUTTON CLASSES #
@@ -337,6 +337,7 @@ class StatsButton (Button):
 			self.model.show_stats.append (message_box)
 			self.model.show_stats += message_texts
   
+
 '''
 A Game is a single game that ends when won, lost or cancelled
 '''      
@@ -690,71 +691,156 @@ class Model:
 Draw elements of Model actors onto screen
 '''
 class View:
-	def __init__ (self, model, screen):
-		self.model = model
-		self.screen = screen
+    def __init__ (self, model, screen):
+        self.model = model
+        self.screen = screen
 
-	def draw (self):
-		self.screen.remove_all()
-		if isinstance (self.model.background, str):
-			self.screen.image = pygame.transform.scale (pygame.image.load (self.model.background),
-													   (WINDOWWIDTH,WINDOWHEIGHT))
-		else:
-			self.screen.image.fill (self.model.background)
+    def draw (self):
+        self.screen.remove_all()
+        if isinstance (self.model.background, str):
+            self.screen.image = pygame.transform.scale (pygame.image.load (self.model.background),(WINDOWWIDTH,WINDOWHEIGHT))
+        else:
+            self.screen.image.fill (self.model.background)
 
-		#put cards in play into a grid:
+        #put cards in play into a grid:
+        if self.model.game != None:
+            space_vert = 50
+            # space_vert changes so that cards adjust themselves if more than 12
+            # never more than 21, any collection of 20 cards must contain a Set
+            if len (self.model.game.in_play_cards) == 12:
+                space_vert = (WINDOW_HEIGHT - 4*CARD_HEIGHT - 2*top_margin) / 3
+            elif len (self.model.game.in_play_cards) == 15:
+                space_vert = (WINDOW_HEIGHT - 5*CARD_HEIGHT - 2*top_margin) / 4
+            elif len (self.model.game.in_play_cards) == 18:
+                space_vert = (WINDOW_HEIGHT - 6*CARD_HEIGHT - 2*top_margin) / 5
+            elif len (self.model.game.in_play_cards) == 21:
+                space_vert = (WINDOW_HEIGHT - 7*CARD_HEIGHT - 2*top_margin) / 6
+            
+            # create positions of cards
+            positions = [(left_margin, top_margin), 
+                (left_margin + CARD_WIDTH + space_horiz, top_margin), 
+                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin),
 
-		if self.model.game != None:
-			space_vert = 50
-			# space_vert changes so that cards adjust themselves if more than 12
-			# never more than 21, any collection of 20 cards must contain a Set
-			if len (self.model.game.in_play_cards) == 12:
-				space_vert = (WINDOW_HEIGHT - 4*CARD_HEIGHT - 2*top_margin) / 3
-			elif len (self.model.game.in_play_cards) == 15:
-				space_vert = (WINDOW_HEIGHT - 5*CARD_HEIGHT - 2*top_margin) / 4
-			elif len (self.model.game.in_play_cards) == 18:
-				space_vert = (WINDOW_HEIGHT - 6*CARD_HEIGHT - 2*top_margin) / 5
-			elif len (self.model.game.in_play_cards) == 21:
-				space_vert = (WINDOW_HEIGHT - 7*CARD_HEIGHT - 2*top_margin) / 6
+                (left_margin, top_margin + CARD_HEIGHT + space_vert),
+                (left_margin + CARD_WIDTH + space_horiz, top_margin + CARD_HEIGHT + space_vert),
+                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + CARD_HEIGHT + space_vert),
 
-			# create positions of cards
-			positions =[(left_margin, top_margin), 
-						(left_margin + CARD_WIDTH + space_horiz, top_margin), 
-						(left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin),
+                (left_margin, top_margin + 2*CARD_HEIGHT + 2*space_vert),
+                (left_margin + CARD_WIDTH + space_horiz, top_margin + 2*CARD_HEIGHT + 2*space_vert),
+                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 2*CARD_HEIGHT + 2*space_vert),
 
-						(left_margin, top_margin + CARD_HEIGHT + space_vert),
-						(left_margin + CARD_WIDTH + space_horiz, top_margin + CARD_HEIGHT + space_vert),
-						(left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + CARD_HEIGHT + space_vert),
+                (left_margin, top_margin + 3*CARD_HEIGHT + 3*space_vert),
+                (left_margin + CARD_WIDTH + space_horiz, top_margin + 3*CARD_HEIGHT + 3*space_vert),
+                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 3*CARD_HEIGHT + 3*space_vert),
 
-						(left_margin, top_margin + 2*CARD_HEIGHT + 2*space_vert),
-						(left_margin + CARD_WIDTH + space_horiz, top_margin + 2*CARD_HEIGHT + 2*space_vert),
-						(left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 2*CARD_HEIGHT + 2*space_vert),
+                (left_margin, top_margin + 4*CARD_HEIGHT + 4*space_vert),
+                (left_margin + CARD_WIDTH + space_horiz, top_margin + 4*CARD_HEIGHT + 4*space_vert),
+                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 4*CARD_HEIGHT + 4*space_vert),
 
-						(left_margin, top_margin + 3*CARD_HEIGHT + 3*space_vert),
-						(left_margin + CARD_WIDTH + space_horiz, top_margin + 3*CARD_HEIGHT + 3*space_vert),
-						(left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 3*CARD_HEIGHT + 3*space_vert),
+                (left_margin, top_margin + 5*CARD_HEIGHT + 5*space_vert),
+                (left_margin + CARD_WIDTH + space_horiz, top_margin + 5*CARD_HEIGHT + 5*space_vert),
+                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 5*CARD_HEIGHT + 5*space_vert),
 
-						(left_margin, top_margin + 4*CARD_HEIGHT + 4*space_vert),
-						(left_margin + CARD_WIDTH + space_horiz, top_margin + 4*CARD_HEIGHT + 4*space_vert),
-						(left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 4*CARD_HEIGHT + 4*space_vert),
+                (left_margin, top_margin + 6*CARD_HEIGHT + 6*space_vert),
+                (left_margin + CARD_WIDTH + space_horiz, top_margin + 6*CARD_HEIGHT + 6*space_vert),
+                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 6*CARD_HEIGHT + 6*space_vert) 
+            ]
 
-						(left_margin, top_margin + 5*CARD_HEIGHT + 5*space_vert),
-						(left_margin + CARD_WIDTH + space_horiz, top_margin + 5*CARD_HEIGHT + 5*space_vert),
-						(left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 5*CARD_HEIGHT + 5*space_vert),
-
-						(left_margin, top_margin + 6*CARD_HEIGHT + 6*space_vert),
-						(left_margin + CARD_WIDTH + space_horiz, top_margin + 6*CARD_HEIGHT + 6*space_vert),
-						(left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 6*CARD_HEIGHT + 6*space_vert) ]
-			
-			# assign positions to cards in play
-			for i in range (len (self.model.game.in_play_cards)):
-				self.model.game.in_play_cards[i].rect.x = positions[i][0]
-				self.model.game.in_play_cards[i].rect.y = positions[i][1]
+            # assign positions to cards in play
+            for i in range (len (self.model.game.in_play_cards)):
+                self.model.game.in_play_cards[i].rect.x = positions[i][0]
+                self.model.game.in_play_cards[i].rect.y = positions[i][1]
 
 		# add all actors to screen
 		for actor in self.model.actors:
 			self.screen.sub (actor)
 
+
+class Practice:
+    def __init__(self,screen,lang):
+        self.pagespecs = yaml.load(open('pagespecs.yml'))
+        self.lang = lang
+        self.current_page = 0
+        self.text_lines = 1
+        self.screen = screen
+        self.pages = list()
+        self.vert_space = 20
+        self.compile_main()
+        self.compile_pages()
+        self.next_page(self.next_button)
+            
+    def compile_main(self):
+        button_height = 50
+        button_width = 100
+        self.main_area = pygame.Rect(0,0,WINDOW_WIDTH,WINDOW_HEIGHT - button_height)
+        self.next_button = planes.gui.Button("Next",pygame.Rect(WINDOW_WIDTH/2 - button_width/2, WINDOW_HEIGHT - (button_height + self.vert_space),button_width,button_height),self.next_page)
+        self.screen.image.fill(BLUE,self.main_area)
+
+        
+    def compile_pages(self):
+        self.pages = list()
+        for pagename,specs in sorted(self.pagespecs.items()): 
+            page_elements = list()
+            vert_position = self.vert_space
+            for spec in specs: 
+                if spec['type'] == 'text':
+                    pos,elems = self.text_block(spec,vert_position) 
+                elif spec['type'] == 'cardsrow':
+                    pos,elems =  self.cards_row(spec['cards'],vert_position)
+                page_elements += elems
+                vert_position = pos
+                self.pages.append(page_elements)
+
+    def text_block(self,data,vertstart): 
+        lineheight = 30
+        linespacing = 10
+        lines = list()
+        vertpos = vertstart
+        for i,line in enumerate(data[self.lang]):
+            if line is None:
+                line = ""
+            vertpos = lineheight*i + vertpos + linespacing 
+            lines.append(ScreenText("line"+str(self.text_lines),line,pygame.Rect(0,0,self.main_area.width,vertpos), FONT_SMALL))
+            self.text_lines += 1
+        return (vertpos + self.vert_space,lines)
+    
+    def cards_row(self,data,vertstart):
+        cards = list()
+        positions = [
+            (left_margin, vertstart), 
+            (left_margin + CARD_WIDTH + space_horiz, vertstart), 
+            (left_margin + 2*CARD_WIDTH + 2*space_horiz, vertstart),
+        ]
+        for i,spec in enumerate(data):
+            spec = map(lambda x: str(x),spec)
+            card = Card("".join(spec), spec[0],spec[1],int(spec[3]),spec[2])
+            card.rect.x = positions[i][0]
+            card.rect.y = positions[i][1]
+            card.image = pygame.image.load(IMG+"/" + card.name + ".png")
+            cards.append(card)
+        return (vertstart + CARD_HEIGHT + self.vert_space,cards)
+
+    def next_page(self,button):
+        self.screen.remove_all()
+        for elem in self.pages[self.current_page] + [self.next_button]:
+            self.screen.sub(elem)
+        self.screen.update()
+        self.screen.render()
+        pygame.display.flip()
+        if self.current_page == 2: 
+            #pygame.event.post(pygame.event.Event(pygame.QUIT)) 
+            self.practice_game()
+        else:
+            self.current_page += 1
+        
+    def practice_game(self):
+        time.sleep(3)
+        pygame.event.post(pygame.event.Event(pygame.QUIT)) 
+            
+        
+
+
+    
 # THE MAIN LOOP
 def play(frame,dur,fullscreen):
     #if __name__ == "__main__":
@@ -787,4 +873,27 @@ def play(frame,dur,fullscreen):
         pygame.display.flip()
         time.sleep (.001)
     return ret
-#pygame.quit()
+
+def practice(frame,dur,fullscreen):
+    pygame.init()
+    size = (WINDOW_WIDTH, WINDOW_HEIGHT)
+    screen = planes.Display(frame,fullscreen)
+    screen.grab = False
+    screen.image.fill(BLACK)
+    view = Practice(screen,'en')
+    running = True
+    while running:
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                running = False
+                ret =  {
+                    "found" : 1, #view.game.sets_found,
+                    "wrong" : 2 #view.game.sets_wrong
+                }
+     
+        screen.process(events)
+        pygame.display.flip()
+    return
+
+
