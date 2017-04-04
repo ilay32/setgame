@@ -56,14 +56,21 @@ class DropZone(planes.Plane):
 		self.thingsDroppedOnMe.append(plane)
 
 class ScreenText(gui.Label):
-	def __init__ (self, name, text, rect, font):
-		planes.Plane.__init__ (self, name, rect, False, False)
+    def __init__ (self, name, text, rect, font, align=None):
+        planes.Plane.__init__ (self, name, rect, False, False)
+        self.background_color = (0,0,0,0)
+        self.text_color = WHITE
+        size = font.size(text)
+        if align is not None and size[0] < rect.width:
+            diff = rect.width - size[0]
+            pad = " "*int(math.floor(diff/font.size(" ")[0]))
+            if align == 'right':
+                text = pad +  text
+            elif align == 'left':
+                text += pad
 
-		self.background_color = (0,0,0,0)
-		self.text_color = WHITE
+        gui.Label.__init__(self, name, text, rect, self.background_color, self.text_color, font)
 
-		gui.Label.__init__(self, name, text, rect, self.background_color, self.text_color, font)
-	
 	def update_text(self, text):
 		self.text = text
 

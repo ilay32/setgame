@@ -336,7 +336,6 @@ class Label(planes.Plane):
            text is the text to be written on the Label. If text is None, it is
            replaced by an empty string.
         """
-
         # Call base class init
         #
         planes.Plane.__init__(self, name, rect, draggable = False, grab = False)
@@ -531,17 +530,18 @@ class Button(Label):
 
     # TODO: Use Label font argument.
 
-    def __init__(self, label, rect, callback, background_color = None, text_color = (0, 0, 0)):
+    def __init__(self, label, rect, callback, background_color = None, text_color = (0, 0, 0),name=None):
         """Initialise the Button.
            label is the Text to be written on the button.
            rect is an instance of pygame.Rect giving the dimensions.
            callback is the function to be called with callback(Button) when the
            Button is clicked with the left mouse button.
         """
-
+        
         # name is the alphanumeric-only-lower case-version of label
         #
-        name = ''.join(filter(str.isalnum, label)).lower()
+        if name is None:
+            name = ''.join(filter(str.isalnum, label)).lower()
 
         if not name:
             raise Exception("Invalid Button name '{0}': it must contain at least one alphanumeric character.".format(label))
@@ -549,7 +549,7 @@ class Button(Label):
         if background_color is None:
 
             background_color = BACKGROUND_COLOR
-
+        
         # Call base class init
         #
         Label.__init__(self, name, label, rect, background_color, text_color)
