@@ -1,6 +1,6 @@
+#-*- coding: utf-8 -*-
 # Anne LoVerso
 # Python Set Game
-
 import pygame
 import math
 from pygame.locals import *
@@ -13,13 +13,14 @@ import os,yaml
 from bidi.algorithm import get_display
 from class_utils import Button
 from class_utils import ScreenText
+import gettext
 
 ####################
 # DEFINE CONSTANTS #
 ####################
 
-WINDOW_WIDTH = 1000
-WINDOW_HEIGHT = 700
+WINDOW_WIDTH = 1024
+WINDOW_HEIGHT = 768
 
 CARD_WIDTH = 200
 CARD_HEIGHT = 100
@@ -29,7 +30,7 @@ left_margin = 50
 space_horiz = ((3*WINDOW_WIDTH/4)-2*left_margin-3*CARD_WIDTH)/2
 
 BLACK = (0, 0, 0)
-GREEN = (0, 255, 0)
+GREEN = (10, 200, 10)
 WHITE = (255, 255, 255)
 BLUE = (0, 0, 255)
 RED = (255,0,0)
@@ -45,7 +46,9 @@ HARD = 1
 NUM_HINTS = 100
 TIME_DEDUC = 3000
 
-IMG = os.path.join(os.path.dirname(os.path.realpath(__file__)),"img")
+ROOT = os.path.dirname(os.path.realpath(__file__))
+IMG = os.path.join(ROOT,"img")
+
 FONT_BIG = pygame.font.SysFont ("Arial", 40)
 FONT_SMALL = pygame.font.SysFont ("Arial", 20)
 
@@ -103,10 +106,13 @@ class Card (planes.Plane):
         self.been_clicked = False
 
     def __eq__ (self, other):
-        return  self.color == other.color and \
-                self.shape == other.shape and \
-                self.number == other.number and \
-                self.shade == other.shade
+        if isinstance(other,Card):
+            return  self.color == other.color and \
+                    self.shape == other.shape and \
+                    self.number == other.number and \
+                    self.shade == other.shade
+        else:
+            return False
 
     def __ne__ (self, other):
         return not self.__eq__(other)
@@ -758,49 +764,60 @@ class View:
 
 class Practice:
     def __init__(self,screen,lang):
-        self.pagespecs = yaml.load(open('pagespecs.yml'))
+        self.pagespecs = yaml.load(open(ROOT+'/pagespecs.yml'))
         self.lang = lang
+        self.side = 'right' if lang == 'he' else 'left'
+        self.font = pygame.font.SysFont ("Arial",26)
+        langdir = os.path.join(ROOT,'lang')
+        self.trans = gettext.translation('setgame',langdir,[self.lang])
+        self.trans.install()
         self.current_page = 0
+        self.currently_on_screen = list()
         self.text_lines = 1
         self.screen = screen
         self.pages = list()
         self.vert_space = 20
         self.compile_main()
         self.compile_pages()
-        self.next_page(self.next_button)
-            
+        self.numpages = len(self.pages) + 1
+        self.show_page(0)
+   
     def compile_main(self):
         button_height = 50
         button_width = 100
         self.main_area = pygame.Rect(0,0,WINDOW_WIDTH,WINDOW_HEIGHT - button_height)
-        self.next_button = planes.gui.Button("Next",pygame.Rect(WINDOW_WIDTH/2 - button_width/2, WINDOW_HEIGHT - (button_height + self.vert_space),button_width,button_height),self.next_page)
-        self.screen.image.fill(BLUE,self.main_area)
+        nav_buttons_top = WINDOW_HEIGHT - button_height -  self.vert_space
+        self.next_button = planes.gui.Button("Next",pygame.Rect(WINDOW_WIDTH/2 - button_width - 10, nav_buttons_top,button_width,button_height),self.next_page,(0,0,190),WHITE,'practice_next')
+        self.prev_button = planes.gui.Button("Previous",pygame.Rect(WINDOW_WIDTH/2 + 10,nav_buttons_top,button_width,button_height),self.prev_page,(0,0,190),WHITE,'practice_prev')
+        #self.screen.image.fill(GREEN,self.main_area)
+        self.incor = planes.gui.Label('incorrect_feedback',"",pygame.Rect(0,(self.main_area.height/2) - 70,self.main_area.width,70),(0,0,0),RED,self.font)
 
         
     def compile_pages(self):
         self.pages = list()
         for pagename,specs in sorted(self.pagespecs.items()): 
+            if not pagename.startswith('page'):
+                continue
             page_elements = list()
             vert_position = self.vert_space
             for spec in specs: 
                 if spec['type'] == 'text':
-                    pos,elems = self.text_block(spec,vert_position) 
+                    pos,elems = self.text_block(spec['lines'],vert_position) 
                 elif spec['type'] == 'cardsrow':
                     pos,elems =  self.cards_row(spec['cards'],vert_position)
                 page_elements += elems
                 vert_position = pos
-                self.pages.append(page_elements)
+            self.pages.append(page_elements)
 
     def text_block(self,data,vertstart): 
         lineheight = 30
         linespacing = 10
         lines = list()
         vertpos = vertstart
-        for i,line in enumerate(data[self.lang]):
-            if line is None:
-                line = ""
-            vertpos = lineheight*i + vertpos + linespacing 
-            lines.append(ScreenText("line"+str(self.text_lines),line,pygame.Rect(0,0,self.main_area.width,vertpos), FONT_SMALL))
+        for line in data:
+            lineid = "line"+str(line)
+            vertpos += lineheight + linespacing
+            lines.append(ScreenText(lineid,get_display(unicode(_(lineid),'utf-8')),pygame.Rect(0,vertpos,self.main_area.width,lineheight),self.font,self.side))
             self.text_lines += 1
         return (vertpos + self.vert_space,lines)
     
@@ -818,29 +835,123 @@ class Practice:
             card.rect.y = positions[i][1]
             card.image = pygame.image.load(IMG+"/" + card.name + ".png")
             cards.append(card)
-        return (vertstart + CARD_HEIGHT + self.vert_space,cards)
+        vertend = vertstart + CARD_HEIGHT + self.vert_space
+        return (vertend,cards)
 
     def next_page(self,button):
+        self.current_page = (self.current_page + 1) % self.numpages
+        self.show_page(self.current_page)
+
+    def prev_page(self,button):
+        self.current_page = (self.current_page - 1) % self.numpages
+        self.show_page(self.current_page)
+    
+    def show_page(self,pagenum):
+        if pagenum == self.numpages - 1:
+            self.practice_game()
+        else:
+            self.render(self.pages[self.current_page] + [self.next_button,self.prev_button])
+                
+    def render(self,elems):
         self.screen.remove_all()
-        for elem in self.pages[self.current_page] + [self.next_button]:
+        for elem in elems: 
             self.screen.sub(elem)
         self.screen.update()
         self.screen.render()
         pygame.display.flip()
-        if self.current_page == 2: 
-            #pygame.event.post(pygame.event.Event(pygame.QUIT)) 
-            self.practice_game()
-        else:
-            self.current_page += 1
+        self.currently_on_screen = elems
+    
+    def refresh(self,**kwargs):
+        remove = kwargs.get('remove') or list()
+        add = kwargs.get('add') or list()
+        elems = [ elem for elem in self.currently_on_screen if elem not in remove]
+        elems += [ elem for elem in add if elem not in elems] 
+        if self.currently_on_screen != elems:
+            self.render(elems)
         
     def practice_game(self):
-        time.sleep(3)
+        time.sleep(0.1)
+        self.screen.remove_all()
+        cards = list()
+        highlights = list()
+        clicked_cards = list()
+        vert_position = self.vert_space
+        correct = [3,5,7]
+        running = True
+        foundit = False
+        
+        #collect the cards
+        cindex = 0
+        for rowname,cardspecs in self.pagespecs['practice_game'].iteritems():
+            pos,threecards = self.cards_row(cardspecs,vert_position)
+            for card in threecards:
+                card.index = cindex
+                cards.append(card)
+                clicked_box = planes.Plane ("clickbox" + str(card.index), pygame.Rect(card.rect.x-5, card.rect.y-5, card.rect.width + 10, card.rect.height + 10), False, False)
+
+                clicked_box.image = pygame.image.load (IMG+"/clickbox.png")
+                clicked_box.index = cindex
+                cindex += 1
+                highlights.append(clicked_box)
+            vert_position = pos
+        self.render([self.prev_button,self.next_button] + cards) 
+
+        #game loop
+        while running:
+            clicked_changed = False
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    running = False
+                    pygame.quit()
+            self.screen.process(events)
+            for card in cards:
+                if card.been_clicked and card not in clicked_cards:
+                    clicked_changed = True
+                    self.refresh(remove=[self.incor])
+                    clicked_cards.append(card)
+                card.update()
+            if clicked_changed: 
+                for card in clicked_cards:
+                    self.refresh(add=[highlights[card.index]],remove=[card])
+                    self.refresh(add=[card])
+                found = sorted([card.index for card in clicked_cards])
+                if found == correct:
+                    running = False
+                    time.sleep(0.1)
+                    self.correct_feedback()
+                elif len(clicked_cards) == 3:
+                    self.incor.text = self.incorrect_feedback(clicked_cards)
+                    self.refresh(add=[self.incor])
+                    for card in clicked_cards:
+                        self.refresh(remove=[highlights[card.index]])
+                        card.been_clicked = False
+                    clicked_cards = list()
+        
+    def correct_feedback(self):
+        cor = planes.gui.Label('correct_feedback',get_display(unicode(_('correct'),'utf-8')),pygame.Rect((self.main_area.width/2) - 250,(self.main_area.height/2) - 100,500,50),(0,0,0),GREEN,FONT_BIG)
+        self.refresh(add=[cor])
+        time.sleep(2)
         pygame.event.post(pygame.event.Event(pygame.QUIT)) 
-            
+
+    def incorrect_feedback(self,cards):
+        message = ""
+        props = {
+            'color' : [card.color for card in cards],
+            'shape' : [card.shape for card in cards],
+            'shade' : [card.shade for card in cards],
+            'number' : [card.number for card in cards]
+        }
+        for prop in props.keys():
+            repeats = len(set(props[prop]))  
+            if repeats == 2:
+                message += get_display(unicode(_("the %s repeats twice" % prop),'utf-8'))
+                message += unicode(" ,",'utf-8')
+
+        return message.strip(" ,")
         
 
 
-    
 # THE MAIN LOOP
 def play(frame,dur,fullscreen):
     #if __name__ == "__main__":
@@ -865,6 +976,11 @@ def play(frame,dur,fullscreen):
                     "found" : view.model.game.sets_found,
                     "wrong" : view.model.game.sets_wrong
                 }
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                ret = "keyboard interrupt"
+
         screen.process(events)
         model.update()
         screen.update()
@@ -880,7 +996,7 @@ def practice(frame,dur,fullscreen):
     screen = planes.Display(frame,fullscreen)
     screen.grab = False
     screen.image.fill(BLACK)
-    view = Practice(screen,'en')
+    view = Practice(screen,'he')
     running = True
     while running:
         events = pygame.event.get()
@@ -891,9 +1007,11 @@ def practice(frame,dur,fullscreen):
                     "found" : 1, #view.game.sets_found,
                     "wrong" : 2 #view.game.sets_wrong
                 }
-     
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                ret = "keyboard interrupt"
         screen.process(events)
-        pygame.display.flip()
     return
 
 

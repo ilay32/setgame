@@ -203,7 +203,18 @@ class Plane:
         self.offset = None
 
         return
-
+    
+    def __eq__(self,other):
+        equal = True
+        for att in self.__dict__.keys():
+            if att in other.__dict__.keys():
+                if other.__dict__[att] != self.__dict__[att]:
+                    equal = False
+                    break
+            else:
+                equal = False
+        return equal
+                    
     def sub(self, plane, insert_after = None):
         """Remove the Plane given from its current parent and add it as a subplane of this Plane.
 
