@@ -1,0 +1,48 @@
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "line1"
+msgstr ""
+
+msgid "line2"
+msgstr ""
+
+msgid "line3"
+msgstr ""
+
+msgid "line4"
+msgstr ""
+
+msgid "line5"
+msgstr ""
+
+msgid "line6"
+msgstr ""
+
+msgid "line7"
+msgstr ""
+
+msgid "line8"
+msgstr ""
+
+msgid "line9"
+msgstr ""
+
+msgid "next"
+msgstr ""
+
+msgid "the color repeats twice"
+msgstr ""
+
+msgid "the shape repeats twice"
+msgstr ""
+
+msgid "the shade repeats twice"
+msgstr ""
+
+msgid "the number repeats twice"
+msgstr ""
+
+msgid "correct"
+msgstr ""
+

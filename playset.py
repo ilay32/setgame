@@ -49,8 +49,8 @@ TIME_DEDUC = 3000
 ROOT = os.path.dirname(os.path.realpath(__file__))
 IMG = os.path.join(ROOT,"img")
 
-FONT_BIG = pygame.font.SysFont ("Arial", 40)
-FONT_SMALL = pygame.font.SysFont ("Arial", 20)
+FONT_BIG = pygame.font.Font ("arial.ttf", 40)
+FONT_SMALL = pygame.font.Font ("arial.ttf", 20)
 
 colors = ['green', 'red', 'purple']
 shapes = ['oval', 'diamond', 'squiggle']
@@ -348,111 +348,86 @@ class StatsButton (Button):
 A Game is a single game that ends when won, lost or cancelled
 '''      
 class Game():
-	def __init__(self, game_select, model):
-		########################
-		# GAME SCREEN ELEMENTS #
-		########################
-		self.deck = []
+    def __init__(self, game_select, model,duration):
+        ########################
+        # GAME SCREEN ELEMENTS #
+        ########################
+        self.deck = []
 
-		self.model = model
-		self.game_select = game_select
+        self.model = model
+        self.game_select = game_select
 
-		self.pause_time = 0
-		self.paused_time_at = 0
+        self.pause_time = 0
+        self.paused_time_at = 0
 
-		self.start_time = pygame.time.get_ticks()
-		self.end_time = 0 # time game ended at
+        self.start_time = pygame.time.get_ticks()
+        self.end_time = 0 # time game ended at
 
-		#make 81 unique cards, add to deck
-		for color in colors:
-			for shape in shapes:
-				for number in numbers:
-					for shade in shades:
-						card_to_add = Card (color + shape + shade + str (number),
-											color, shape, number, shade)
-						self.deck.append (card_to_add)
-						card_to_add.image = pygame.image.load (IMG+"/" + card_to_add.name + ".png")
-						
-		self.actors = []
+        self.duration = duration
 
-		self.in_play_cards = []
-		self.clicked_cards = []
-		self.out_of_play_cards = []
+        #make 81 unique cards, add to deck
+        for color in colors:
+            for shape in shapes:
+                for number in numbers:
+                    for shade in shades:
+                        card_to_add = Card(color + shape + shade + str (number), color, shape, number, shade)
+                        self.deck.append (card_to_add)
+                        card_to_add.image = pygame.image.load (IMG+"/" + card_to_add.name + ".png")
 
-		self.sets_found = 0
-		self.sets_wrong = 0 # should we take off points for these?
-		self.hints_left = NUM_HINTS
+        self.actors = []
+        self.in_play_cards = []
+        self.clicked_cards = []
+        self.out_of_play_cards = []
 
-		# tells if we have already added the game time to the times []
-		# prevents from adding the time on every update loop
-		self.added_time = False
+        self.sets_found = 0
+        self.sets_wrong = 0 # should we take off points for these?
+        self.hints_left = NUM_HINTS
 
-		#### Elements of a game ####
-		self.sets_found_label = ScreenText ("sets_found_label", 
-											"Sets: " + str (self.sets_found), 
-											pygame.Rect (3*WINDOW_WIDTH/4, 290, WINDOW_WIDTH/4, 50), 
-											FONT_BIG)
-		self.time_label = ScreenText ("time_label", 
-									  "Time: " + format_secs (self.start_time / 1000),
-									  pygame.Rect (3*WINDOW_WIDTH/4, 220, WINDOW_WIDTH/4, 100),
-									  FONT_BIG)
-		self.left_in_deck_label = ScreenText ("left_in_deck_label", 
-									  "Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))),
-									  pygame.Rect (3*WINDOW_WIDTH/4, 505, WINDOW_WIDTH/4, 25), 
-									  FONT_SMALL)
+        # tells if we have already added the game time to the times []
+        # prevents from adding the time on every update loop
+        self.added_time = False
 
-		self.add3_button = AddThreeCardsButton ("add_three_cards_button",
-												pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2, 360, 100, 100),
-												AddThreeCardsButton.clicked,
-												self)
-		self.hint_button = HintButton ("hint_button",
-										pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2 + 100, 360, 100, 100),
-										HintButton.clicked,
-										self)
-		self.pause_button = PauseButton ("pause_button",
-										pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2 + 50, WINDOW_HEIGHT - 120, 100, 100),
-										PauseButton.clicked,
-										self)
-		self.hints_left_label = ScreenText ("hints_left_label", 
-											"Hints Remaining: " + str (self.hints_left), 
-											pygame.Rect (3*WINDOW_WIDTH/4, 475, WINDOW_WIDTH/4, 25), 
-											FONT_SMALL)
-		self.logo = planes.Plane ("setlogo",
-								  pygame.Rect (3*WINDOW_WIDTH/4, 50, 240, 162),
-								  False, False)
-		self.logo.image = pygame.image.load (IMG+"/set.jpg")
-		self.time_box = TimeBox ("time_box", pygame.Rect (0, -WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT), game_select)
+        #### Elements of a game ####
+        self.sets_found_label = ScreenText ("sets_found_label","Sets: " + str (self.sets_found),pygame.Rect (3*WINDOW_WIDTH/4, 290, WINDOW_WIDTH/4, 50), FONT_BIG)
+        
+        self.time_label = ScreenText ("time_label", "Time: " + format_secs (self.duration / 1000), pygame.Rect (3*WINDOW_WIDTH/4, 220, WINDOW_WIDTH/4, 100), FONT_BIG)
+        
+        self.left_in_deck_label = ScreenText("left_in_deck_label", "Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))), pygame.Rect (3*WINDOW_WIDTH/4, 505, WINDOW_WIDTH/4, 25), FONT_SMALL) 
+        
+        self.add3_button = AddThreeCardsButton ("add_three_cards_button", pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2, 360, 100, 100), AddThreeCardsButton.clicked, self)
+        
+        self.hint_button = HintButton ("hint_button", pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2 + 100, 360, 100, 100), HintButton.clicked, self)
+        self.pause_button = PauseButton ("pause_button", pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2 + 50, WINDOW_HEIGHT - 120, 100, 100), PauseButton.clicked, self)
+        
+        self.hints_left_label = ScreenText ("hints_left_label", "Hints Remaining: " + str (self.hints_left), pygame.Rect (3*WINDOW_WIDTH/4, 475, WINDOW_WIDTH/4, 25), FONT_SMALL)
 
+        self.logo = planes.Plane ("setlogo", pygame.Rect (3*WINDOW_WIDTH/4, 50, 240, 162), False, False) 
+        
+        self.logo.image = pygame.image.load (IMG+"/set.jpg")
+        
+        self.time_box = TimeBox ("time_box", pygame.Rect (0, -WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT), game_select)
+        
+        #### PAUSE SCREEN BUTTONS ####
+        message_width = 3*CARD_WIDTH + 2*space_horiz # width of playing field
+        self.play_button = PlayButton ("play_button", pygame.Rect (2*message_width/5 - 50, WINDOW_HEIGHT - 300, 100, 100), PlayButton.clicked, self)
+        
+        self.restart_button = RestartButton ("restart_button", pygame.Rect (3*message_width/5 - 50, WINDOW_HEIGHT - 300, 100, 100), RestartButton.clicked, self) 
+        self.back_button = BackButton ("back_button", pygame.Rect (4*message_width/5 - 50, WINDOW_HEIGHT - 300, 100, 100), BackButton.clicked, self)
+        
+        #### CATEGORIES ####
+        self.gamebuttons = [self.add3_button, self.hint_button, self.pause_button, self.logo]
+        self.gamelabels = [self.sets_found_label, self.time_label, self.hints_left_label, self.left_in_deck_label]
+        self.pausebuttons = [self.play_button, self.restart_button, self.back_button]
 
-		#### PAUSE SCREEN BUTTONS ####
-		message_width = 3*CARD_WIDTH + 2*space_horiz # width of playing field
+        # start the game
+        self.add_new_cards (12)
 
-		self.play_button = PlayButton ("play_button",
-										pygame.Rect (2*message_width/5 - 50, WINDOW_HEIGHT - 300, 100, 100),
-										PlayButton.clicked,
-										self)
-		self.restart_button = RestartButton ("restart_button",
-										pygame.Rect (3*message_width/5 - 50, WINDOW_HEIGHT - 300, 100, 100),
-										RestartButton.clicked,
-										self)
-		self.back_button = BackButton ("back_button",
-										pygame.Rect (4*message_width/5 - 50, WINDOW_HEIGHT - 300, 100, 100),
-										BackButton.clicked,
-										self)
-		#### CATEGORIES ####
-		self.gamebuttons = [self.add3_button, self.hint_button, self.pause_button, self.logo]
-		self.gamelabels = [self.sets_found_label, self.time_label, self.hints_left_label, self.left_in_deck_label]
-		self.pausebuttons = [self.play_button, self.restart_button, self.back_button]
-
-		# start the game
-		self.add_new_cards (12)
-
-	# Add cards to the in-play cards
-	# Number = number of cards to add
-	# Index allows adding 1 card in the same position as a removed card
-	# Does not check whether we SHOULD because assumes we have checked that before calling
-	def add_new_cards (self, number, index=0):
-		if not len (self.in_play_cards) + len (self.out_of_play_cards) == len (self.deck):
+    # Add cards to the in-play cards
+    # Number = number of cards to add
+    # Index allows adding 1 card in the same position as a removed card
+    # Does not check whether we SHOULD because assumes we have checked that before calling
+    def add_new_cards (self, number, index=0):
+        if not len (self.in_play_cards) + len (self.out_of_play_cards) == len (self.deck):
 			i = 0
 			while i < number:
 				num = random.randint (0,len (self.deck)-1)
@@ -462,7 +437,7 @@ class Game():
 					i += 1
 
 	# Checks if any sets on the board
-	def check_if_any_sets (self):
+    def check_if_any_sets (self):
 		for card1 in self.in_play_cards:
 			for card2 in self.in_play_cards:
 				for card3 in self.in_play_cards:
@@ -471,21 +446,20 @@ class Game():
 							return True
 		return False
 
-	# Checks if game is won
-	def check_if_won (self):
-		return (not self.check_if_any_sets()) and \
-			   (len (self.in_play_cards) + len (self.out_of_play_cards) == len (self.deck))
+    # Checks if game is won
+    def check_if_won (self):
+        return (not self.check_if_any_sets()) and (len (self.in_play_cards) + len (self.out_of_play_cards) == len (self.deck))
 
-	# Game can only be lost if playing in time mode
-	def check_if_lost (self):
-		return self.time_box.rect.y >= 0
+    # Game can only be lost if playing in time mode
+    def check_if_lost (self):
+        return self.time_box.rect.y >= 0
 
-	# Game can only be lost if playing in time mode
-	def check_in_play (self):
-		return not self.check_if_won() and not self.check_if_lost() and self.paused_time_at == 0 
+    # Game can only be lost if playing in time mode
+    def check_in_play (self):
+        return not self.check_if_won() and not self.check_if_lost() and self.paused_time_at == 0 
 
 	# Called infinitely
-	def update (self):
+    def update (self):
 		# if game not in play, display messages, not cards
 		if not self.check_in_play():
 			self.actors = []
@@ -577,7 +551,7 @@ class Game():
 				self.actors.insert (1, clicked_box)
 
 			#check for sets
-			if len (self.clicked_cards) == 3:
+			if len(self.clicked_cards) == 3:
 				is_set = check_set (self.clicked_cards[0], 
 									self.clicked_cards[1],
 									self.clicked_cards[2])
@@ -599,24 +573,24 @@ class Game():
 					self.sets_wrong += 1
 				for card in self.clicked_cards:
 					card.been_clicked = False
-
-			self.actors += self.gamelabels + self.gamebuttons
-			self.time_label.update_text ("Time: " + format_secs ((pygame.time.get_ticks() - self.start_time - self.pause_time)/ 1000))
-			self.hints_left_label.update_text ("Hints Remaining: " + str (self.hints_left))
-			self.left_in_deck_label.update_text ("Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))))
+                
+                self.actors += self.gamelabels + self.gamebuttons
+                self.time_label.update_text("Time: " + format_secs((self.duration - (pygame.time.get_ticks() - self.start_time - self.pause_time))/ 1000))
+                self.hints_left_label.update_text ("Hints Remaining: " + str (self.hints_left))
+                self.left_in_deck_label.update_text ("Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))))
 
 '''
 The Model is the overall object in controlling the entire program
 It instantiates Game objects as needed but also contains home screen
 '''
 class Model:
-	def __init__ (self):
+	def __init__ (self,dur):
 		self.background = (0,0,0)
 		self.mode = MODE_GAME
 		#self.mode = MODE_HOME
 		self.game_select = NOTIME
 
-		self.game = Game(NOTIME, self)
+		self.game = Game(NOTIME, self,dur)
 		#self.game = None
 		self.actors = []
 		#try:
@@ -763,7 +737,8 @@ class View:
 
 
 class Practice:
-    def __init__(self,screen,lang):
+    def __init__(self,screen,dur,lang):
+        self.starttime = pygame.time.get_ticks()
         self.pagespecs = yaml.load(open(ROOT+'/pagespecs.yml'))
         self.lang = lang
         self.side = 'right' if lang == 'he' else 'left'
@@ -781,6 +756,15 @@ class Practice:
         self.compile_pages()
         self.numpages = len(self.pages) + 1
         self.show_page(0)
+        self.practice_duration = dur
+        self.return_vars = {
+            'practice_game_start': 0,
+            'practice_sequence_end': 0,
+            'practice_correct_speed': 0,
+            'practice_wrong' : 0,
+            'prev_press' : 0,
+            'next_press' : 0
+        }
    
     def compile_main(self):
         button_height = 50
@@ -841,10 +825,12 @@ class Practice:
     def next_page(self,button):
         self.current_page = (self.current_page + 1) % self.numpages
         self.show_page(self.current_page)
+        self.return_vars['next_press'] += 1
 
     def prev_page(self,button):
         self.current_page = (self.current_page - 1) % self.numpages
         self.show_page(self.current_page)
+        self.return_vars['prev_press'] += 1
     
     def show_page(self,pagenum):
         if pagenum == self.numpages - 1:
@@ -868,8 +854,17 @@ class Practice:
         elems += [ elem for elem in add if elem not in elems] 
         if self.currently_on_screen != elems:
             self.render(elems)
-        
+    
+    def register(self,key,value):
+        print "%s: %r" %(key,value)
+        if key in self.return_vars.keys():
+            self.return_vars[key] = value
+        else:
+            raise KeyError 
+
     def practice_game(self):
+        self.register('practice_game_start',pygame.time.get_ticks() - self.starttime)
+        pygame.time.set_timer(pygame.USEREVENT,self.practice_duration)
         time.sleep(0.1)
         self.screen.remove_all()
         cards = list()
@@ -904,7 +899,21 @@ class Practice:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                     running = False
                     pygame.quit()
+                if event.type == pygame.USEREVENT :
+                    for card in clicked_cards:
+                        self.refresh(remove=[highlights[card.index]])
+                        card.been_clicked = False
+                    clicked_cards = list()
+                    for cindex in correct:
+                        card = cards[cindex]
+                        self.refresh(add=[highlights[cindex]],remove=[card])
+                        self.refresh(add=[card])
+                        pygame.time.wait(1000)
+                        clicked_cards.append(card)
+                    clicked_changed = True
+            
             self.screen.process(events)
+                         
             for card in cards:
                 if card.been_clicked and card not in clicked_cards:
                     clicked_changed = True
@@ -917,8 +926,8 @@ class Practice:
                     self.refresh(add=[card])
                 found = sorted([card.index for card in clicked_cards])
                 if found == correct:
+                    self.register('practice_correct_speed',pygame.time.get_ticks() - self.return_vars['practice_game_start'])
                     running = False
-                    time.sleep(0.1)
                     self.correct_feedback()
                 elif len(clicked_cards) == 3:
                     self.incor.text = self.incorrect_feedback(clicked_cards)
@@ -929,12 +938,14 @@ class Practice:
                     clicked_cards = list()
         
     def correct_feedback(self):
+        self.register('practice_sequence_end',pygame.time.get_ticks())
         cor = planes.gui.Label('correct_feedback',get_display(unicode(_('correct'),'utf-8')),pygame.Rect((self.main_area.width/2) - 250,(self.main_area.height/2) - 100,500,50),(0,0,0),GREEN,FONT_BIG)
         self.refresh(add=[cor])
-        time.sleep(2)
+        pygame.time.wait(2000)
         pygame.event.post(pygame.event.Event(pygame.QUIT)) 
 
     def incorrect_feedback(self,cards):
+        self.return_vars['practice_wrong'] += 1
         message = ""
         props = {
             'color' : [card.color for card in cards],
@@ -953,7 +964,7 @@ class Practice:
 
 
 # THE MAIN LOOP
-def play(frame,dur,fullscreen):
+def play(frame,dur,lang,fullscreen):
     #if __name__ == "__main__":
     pygame.init()
     size = (WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -961,7 +972,7 @@ def play(frame,dur,fullscreen):
     screen = planes.Display(frame,fullscreen)
     screen.grab = False
     screen.image.fill(BLACK)
-    model = Model()
+    model = Model(dur)
     view = View(model,screen)
     running = True
     pygame.time.set_timer(pygame.QUIT,dur)
@@ -973,8 +984,8 @@ def play(frame,dur,fullscreen):
                 #raise SystemExit
                 running = False
                 ret =  {
-                    "found" : view.model.game.sets_found,
-                    "wrong" : view.model.game.sets_wrong
+                    "sets_found" : view.model.game.sets_found,
+                    "sets_wrong" : view.model.game.sets_wrong
                 }
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -990,28 +1001,25 @@ def play(frame,dur,fullscreen):
         time.sleep (.001)
     return ret
 
-def practice(frame,dur,fullscreen):
+def practice(frame,dur,lang,fullscreen):
     pygame.init()
     size = (WINDOW_WIDTH, WINDOW_HEIGHT)
     screen = planes.Display(frame,fullscreen)
     screen.grab = False
     screen.image.fill(BLACK)
-    view = Practice(screen,'he')
+    view = Practice(screen,dur,lang)
     running = True
     while running:
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
                 running = False
-                ret =  {
-                    "found" : 1, #view.game.sets_found,
-                    "wrong" : 2 #view.game.sets_wrong
-                }
+                ret =  view.return_vars            
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
                 ret = "keyboard interrupt"
         screen.process(events)
-    return
+    return ret
 
 

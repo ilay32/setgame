@@ -70,14 +70,13 @@ class ScreenText(gui.Label):
                 text += pad
 
         gui.Label.__init__(self, name, text, rect, self.background_color, self.text_color, font)
+    def update_text(self, text):
+        self.text = text
+    
+    def update_color(self, color):
+        #print color
+        self.text_color = color
 
-	def update_text(self, text):
-		self.text = text
-
-	def update_color(self, color):
-		#print color
-		self.text_color = color
-
-	def update_background(self, color):
-		self.background_color = color
+    def update_background(self, color):
+        self.background_color = color
 
