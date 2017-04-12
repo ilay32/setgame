@@ -14,48 +14,57 @@ from bidi.algorithm import get_display
 from class_utils import Button
 from class_utils import ScreenText
 import gettext
-
-####################
-# DEFINE CONSTANTS #
-####################
-
-WINDOW_WIDTH = 1024
-WINDOW_HEIGHT = 768
-
-CARD_WIDTH = 200
-CARD_HEIGHT = 100
-
-top_margin = 50
-left_margin = 50
-space_horiz = ((3*WINDOW_WIDTH/4)-2*left_margin-3*CARD_WIDTH)/2
-
+ROOT = os.path.dirname(os.path.realpath(__file__))
+IMG = os.path.join(ROOT,"img")
 BLACK = (0, 0, 0)
 GREEN = (10, 200, 10)
 WHITE = (255, 255, 255)
-BLUE = (0, 0, 255)
 RED = (255,0,0)
-
 MODE_HOME = 0
 MODE_GAME = 1
-
 NOTIME = 0
 EASY = 4
 MEDIUM = 2
 HARD = 1
-
 NUM_HINTS = 100
 TIME_DEDUC = 3000
 
-ROOT = os.path.dirname(os.path.realpath(__file__))
-IMG = os.path.join(ROOT,"img")
 
-FONT_BIG = pygame.font.Font ("arial.ttf", 40)
-FONT_SMALL = pygame.font.Font ("arial.ttf", 20)
+"""
+this will take a few basic settings and compute
+the rest accordingly, so that the other classes more dynamic
+"""
+class GameSettings:
+    def __init__(self,settings=None):
+        # define some defaults
+        self.window_width = 1024
+        self.window_height = 768
+        self.card_width = 200
+        self.card_height = 100
+        self.fontfamily = "couriernew"
+        self.bigfontpx = 40
+        self.smallfontpx = 20
+        self.top_margin = 50
+        self.left_margin = 50
+        self.colors = ['green', 'red', 'purple']
+        self.shapes = ['oval', 'diamond', 'squiggle']
+        self.numbers = [1,2,3]
+        self.shades = ['filled','shaded', 'empty']
+        self.game_type = 'varied_number'
+        self.background = BLACK
 
-colors = ['green', 'red', 'purple']
-shapes = ['oval', 'diamond', 'squiggle']
-numbers = [1,2,3]
-shades = ['filled','shaded', 'empty']
+        # possibly override them
+        if settings:
+            for key,val in settings.iteritems(): 
+                self.__dict__[key] = val
+        # derive the rest
+        self.bigfont = pygame.font.SysFont(self.fontfamily, self.bigfontpx)
+        self.smallfont = pygame.font.SysFont(self.fontfamily,self.smallfontpx)
+        if self.game_type == 'simple':
+            self.numbers = [1]
+            self.card_width = round(self.cards_width / 2)
+        self.space_horiz = ((3*self.window_width/4)-2*self.left_margin-3*self.card_width)/2
+
 
 '''
 Given three cards, checks whether they form a Set
@@ -96,14 +105,15 @@ def format_secs (secs):
 '''
 a Card has attributes of color, shape, number, and shade
 '''
-class Card (planes.Plane):
-    def __init__ (self, name, color, shape, number, shade):
-        planes.Plane.__init__ (self, name, pygame.Rect(0,0,CARD_WIDTH,CARD_HEIGHT), False, False)
+class Card(planes.Plane):
+    def __init__ (self, color, shape, number, shade):
         self.color = color
         self.shape = shape
         self.number = number
         self.shade = shade
         self.been_clicked = False
+        self.name = color + shape + shade + str (number)
+        planes.Plane.__init__ (self, self.name, pygame.Rect(0,0,settings.card_width,settings.card_height), False, False)
 
     def __eq__ (self, other):
         if isinstance(other,Card):
@@ -123,6 +133,11 @@ class Card (planes.Plane):
     def update (self):
         pass
 
+class CardSingle(Card):
+    def __init__(self,color,shape,shade):
+        super(self,CardSingle).__init__(color,shape,1,shade)
+        self.name = color + shape + shade
+    
 '''
 The TimeBox is a box that serves as a timer, slowly moving down and filling the screen
 '''
@@ -327,17 +342,17 @@ class StatsButton (Button):
 				avg_time = format_secs (sum (self.model.times) / len (self.model.times))
 			
 			message_box = planes.Plane ('message_box',
-					pygame.Rect (left_margin, top_margin, 13*WINDOW_WIDTH/16, (WINDOW_HEIGHT-300)))
+					pygame.Rect (settings.left_margin, settings.top_margin, 13*settings.window_width/16, (settings.window_height-300)))
 			message_box.image.fill ((0,0,0))
 
 			win_stats = "Game Stats \n" + "Number of Games: " + num_games + "\nBest time: " + best_time + "\nAverage time: " + avg_time
 
 			message_texts = []
 			lines = win_stats.split ("\n")
-			box_width = 13*WINDOW_WIDTH/16
+			box_width = 13*settings.window_width/16
 			for line in lines:
 				message_texts.append (ScreenText (line, line, 
-									  pygame.Rect(left_margin, top_margin + 60*(lines.index(line)+1) ,box_width, 45), FONT_BIG))
+									  pygame.Rect(settings.left_margin, settings.top_margin + 60*(lines.index(line)+1) ,box_width, 45), settings.bigfont))
 
 			#message_text.background_color = (255,0,0) #fixthis not transparent
 			self.model.show_stats.append (message_box)
@@ -366,12 +381,12 @@ class Game():
         self.duration = duration
 
         #make 81 unique cards, add to deck
-        for color in colors:
-            for shape in shapes:
-                for number in numbers:
-                    for shade in shades:
-                        card_to_add = Card(color + shape + shade + str (number), color, shape, number, shade)
-                        self.deck.append (card_to_add)
+        for color in settings.colors:
+            for shape in settings.shapes:
+                for number in settings.numbers:
+                    for shade in settings.shades:
+                        card_to_add = Card(color, shape, number, shade)
+                        self.deck.append(card_to_add)
                         card_to_add.image = pygame.image.load (IMG+"/" + card_to_add.name + ".png")
 
         self.actors = []
@@ -386,42 +401,42 @@ class Game():
         # tells if we have already added the game time to the times []
         # prevents from adding the time on every update loop
         self.added_time = False
+        self.compile_elements()
+        # start the game
+        self.add_new_cards(12)
 
-        #### Elements of a game ####
-        self.sets_found_label = ScreenText ("sets_found_label","Sets: " + str (self.sets_found),pygame.Rect (3*WINDOW_WIDTH/4, 290, WINDOW_WIDTH/4, 50), FONT_BIG)
-        
-        self.time_label = ScreenText ("time_label", "Time: " + format_secs (self.duration / 1000), pygame.Rect (3*WINDOW_WIDTH/4, 220, WINDOW_WIDTH/4, 100), FONT_BIG)
-        
-        self.left_in_deck_label = ScreenText("left_in_deck_label", "Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))), pygame.Rect (3*WINDOW_WIDTH/4, 505, WINDOW_WIDTH/4, 25), FONT_SMALL) 
-        
-        self.add3_button = AddThreeCardsButton ("add_three_cards_button", pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2, 360, 100, 100), AddThreeCardsButton.clicked, self)
-        
-        self.hint_button = HintButton ("hint_button", pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2 + 100, 360, 100, 100), HintButton.clicked, self)
-        self.pause_button = PauseButton ("pause_button", pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2 + 50, WINDOW_HEIGHT - 120, 100, 100), PauseButton.clicked, self)
-        
-        self.hints_left_label = ScreenText ("hints_left_label", "Hints Remaining: " + str (self.hints_left), pygame.Rect (3*WINDOW_WIDTH/4, 475, WINDOW_WIDTH/4, 25), FONT_SMALL)
+    def compile_elements(self):
+        self.sets_found_label = ScreenText("sets_found_label","Sets: " + str(self.sets_found),pygame.Rect(3*settings.window_width/4, 290, settings.window_width/4, 50),settings.bigfont)
+        self.time_label = ScreenText ("time_label", "Time: " + format_secs (self.duration / 1000), pygame.Rect (3*settings.window_width/4, 220, settings.window_width/4, 100), settings.bigfont)
 
-        self.logo = planes.Plane ("setlogo", pygame.Rect (3*WINDOW_WIDTH/4, 50, 240, 162), False, False) 
-        
+        self.left_in_deck_label = ScreenText("left_in_deck_label", "Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))), pygame.Rect (3*settings.window_width/4, 505, settings.window_width/4, 25), settings.smallfont) 
+
+        self.add3_button = AddThreeCardsButton ("add_three_cards_button", pygame.Rect (3*settings.window_width/4 + (settings.window_width/4 - 200)/2, 360, 100, 100), AddThreeCardsButton.clicked, self)
+
+        self.hint_button = HintButton ("hint_button", pygame.Rect (3*settings.window_width/4 + (settings.window_width/4 - 200)/2 + 100, 360, 100, 100), HintButton.clicked, self)
+        self.pause_button = PauseButton ("pause_button", pygame.Rect(3*settings.window_width/4 + (settings.window_width/4 - 200)/2 + 50, settings.window_height - 120, 100, 100), PauseButton.clicked, self)
+
+        self.hints_left_label = ScreenText ("hints_left_label", "Hints Remaining: " + str (self.hints_left), pygame.Rect (3*settings.window_width/4, 475, settings.window_width/4, 25), settings.smallfont)
+
+        self.logo = planes.Plane ("setlogo", pygame.Rect(3*settings.window_width/4, 50, 240, 162), False, False) 
+
         self.logo.image = pygame.image.load (IMG+"/set.jpg")
-        
-        self.time_box = TimeBox ("time_box", pygame.Rect (0, -WINDOW_HEIGHT, WINDOW_WIDTH, WINDOW_HEIGHT), game_select)
-        
+
+        self.time_box = TimeBox ("time_box", pygame.Rect (0, -settings.window_height, settings.window_width, settings.window_height), self.game_select)
+
         #### PAUSE SCREEN BUTTONS ####
-        message_width = 3*CARD_WIDTH + 2*space_horiz # width of playing field
-        self.play_button = PlayButton ("play_button", pygame.Rect (2*message_width/5 - 50, WINDOW_HEIGHT - 300, 100, 100), PlayButton.clicked, self)
-        
-        self.restart_button = RestartButton ("restart_button", pygame.Rect (3*message_width/5 - 50, WINDOW_HEIGHT - 300, 100, 100), RestartButton.clicked, self) 
-        self.back_button = BackButton ("back_button", pygame.Rect (4*message_width/5 - 50, WINDOW_HEIGHT - 300, 100, 100), BackButton.clicked, self)
-        
+        message_width = 3*settings.card_width + 2*settings.space_horiz # width of playing field
+        self.play_button = PlayButton ("play_button", pygame.Rect (2*message_width/5 - 50, settings.window_height - 300, 100, 100), PlayButton.clicked, self)
+
+        self.restart_button = RestartButton ("restart_button", pygame.Rect (3*message_width/5 - 50, settings.window_height - 300, 100, 100), RestartButton.clicked, self) 
+        self.back_button = BackButton ("back_button", pygame.Rect (4*message_width/5 - 50, settings.window_height - 300, 100, 100), BackButton.clicked, self)
+
         #### CATEGORIES ####
         self.gamebuttons = [self.add3_button, self.hint_button, self.pause_button, self.logo]
         self.gamelabels = [self.sets_found_label, self.time_label, self.hints_left_label, self.left_in_deck_label]
         self.pausebuttons = [self.play_button, self.restart_button, self.back_button]
 
-        # start the game
-        self.add_new_cards (12)
-
+        
     # Add cards to the in-play cards
     # Number = number of cards to add
     # Index allows adding 1 card in the same position as a removed card
@@ -468,10 +483,10 @@ class Game():
 			self.left_in_deck_label.update_text ("Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))))
 
 			message_box = planes.Plane ('message_box',
-										pygame.Rect (left_margin, 
-													top_margin, 
-													3*CARD_WIDTH + 2*space_horiz, 
-													4*CARD_HEIGHT + 3*((WINDOW_HEIGHT - 4*CARD_HEIGHT - 2*top_margin) / 3)))
+										pygame.Rect (settings.left_margin, 
+													settings.top_margin, 
+													3*settings.card_width + 2*settings.space_horiz, 
+													4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)))
 			message_box.image.fill ((0,0,0))
 			message_texts = []
 
@@ -509,18 +524,18 @@ class Game():
 					stats = lose_stats
 
 				lines = stats.split ("\n")
-				box_width = 3*CARD_WIDTH + 2*space_horiz
+				box_width = 3*settings.card_width + 2*settings.space_horiz
 				for line in lines:
 					message_texts.append (ScreenText (line, line, 
-										pygame.Rect(left_margin, top_margin + 50*(lines.index(line)+1) ,box_width, 45), FONT_BIG))
+										pygame.Rect(settings.left_margin, settings.top_margin + 50*(lines.index(line)+1) ,box_width, 45), settings.bigfont))
 
 			elif self.paused_time_at != 0: #game is paused
 				message_texts.append (ScreenText ("message_text", "Game Paused",
-										pygame.Rect (left_margin, 
-													top_margin, 
-													3*CARD_WIDTH + 2*space_horiz, 
-													4*CARD_HEIGHT + 3*((WINDOW_HEIGHT - 4*CARD_HEIGHT - 2*top_margin) / 3)),
-										FONT_BIG))
+										pygame.Rect (settings.left_margin, 
+													settings.top_margin, 
+													3*settings.card_width + 2*settings.space_horiz, 
+													4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)),
+										settings.bigfont))
 				
 			self.actors.append (message_box)
 			self.actors += message_texts
@@ -560,7 +575,7 @@ class Game():
 					self.sets_found_label.update_text ("Sets: " + str (self.sets_found))
 
 					# reset the time box
-					self.time_box.rect.y = -WINDOW_HEIGHT
+					self.time_box.rect.y = -settings.window_height
 
 					#remove cards and add new ones
 					for card in self.clicked_cards:
@@ -584,88 +599,17 @@ The Model is the overall object in controlling the entire program
 It instantiates Game objects as needed but also contains home screen
 '''
 class Model:
-	def __init__ (self,dur):
-		self.background = (0,0,0)
-		self.mode = MODE_GAME
-		#self.mode = MODE_HOME
-		self.game_select = NOTIME
+    def __init__ (self,dur):
+        self.mode = MODE_GAME
+        self.game_select = NOTIME
+        self.game = Game(NOTIME, self,dur)
+        self.actors = []
+        self.show_stats = [] # a list of things for stats screen
 
-		self.game = Game(NOTIME, self,dur)
-		#self.game = None
-		self.actors = []
-		#try:
-		#	times_file = open("times_file.txt","r")
-		#except:
-		#	times_file = open("times_file.txt", "w+")
-		#self.times = [int(score.strip()) for score in times_file.readlines()]
-		#times_file.close()
-		self.show_stats = [] # a list of things for stats screen
-
-		########################
-		# HOME SCREEN ELEMENTS #
-		########################
-
-		self.title = planes.Plane("title", pygame.Rect (left_margin, top_margin, 13*WINDOW_WIDTH/16, (WINDOW_HEIGHT-300)))
-
-		self.start_button = StartButton ("start_button",
-										pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2 + 100, 50, 100, 100),
-										StartButton.clicked,
-										self)
-
-		self.notime_button = NoTimeButton ("notime_button",
-										pygame.Rect (WINDOW_WIDTH/5 - 50, WINDOW_HEIGHT - 200, 100, 100),
-										NoTimeButton.clicked,
-										self)
-		self.easy_button = EasyButton ("easy_button",
-										pygame.Rect (2*WINDOW_WIDTH/5 - 50, WINDOW_HEIGHT - 200, 100, 100),
-										EasyButton.clicked,
-										self)
-		self.med_button = MedButton ("med_button",
-										pygame.Rect (3*WINDOW_WIDTH/5 - 50, WINDOW_HEIGHT - 200, 100, 100),
-										MedButton.clicked,
-										self)
-		self.hard_button = HardButton ("hard_button",
-										pygame.Rect (4*WINDOW_WIDTH/5 - 50, WINDOW_HEIGHT - 200, 100, 100),
-										HardButton.clicked,
-										self)
-		self.stats_button = StatsButton ("stats_button",
-										pygame.Rect (3*WINDOW_WIDTH/4 + (WINDOW_WIDTH/4 - 200)/2 + 100, 200, 100, 100),
-										StatsButton.clicked,
-										self)
-
-		self.homebuttons = [self.start_button, self.notime_button, self.easy_button, self.med_button, self.hard_button, self.stats_button]
-	
-	# Opens the times file and writes a new time score to the end
-	def add_time(self, time):
-		times_file = open("times_file.txt", "a")
-		times_file.write(str(time)+"\n")
-		self.times.append(time)
-		times_file.close()
-
-	# update model - either update homescreen or update game
-	def update (self):
-		if self.mode == MODE_HOME:
-			self.actors = [self.title] + self.homebuttons[:]
-			if self.show_stats != None:
-				self.actors += self.show_stats
-			clicked_button = None
-			#add click box 
-			for button in self.homebuttons:
-				if button.clickbox:
-					clicked_button = button
-
-			clicked_box = planes.Plane ("box" + clicked_button.name,
-										pygame.Rect (clicked_button.rect.x-5,
-													 clicked_button.rect.y-5,
-													 clicked_button.rect.width + 10,
-													 clicked_button.rect.height + 10),
-										False, False)
-
-			self.actors.insert (1, clicked_box)
-		
-		else:
-			self.game.update()
-			self.actors = self.game.actors[:]
+# update model - either update homescreen or update game
+    def update (self):
+        self.game.update()
+        self.actors = self.game.actors
 
 '''
 Draw elements of Model actors onto screen
@@ -677,53 +621,53 @@ class View:
 
     def draw (self):
         self.screen.remove_all()
-        if isinstance (self.model.background, str):
-            self.screen.image = pygame.transform.scale (pygame.image.load (self.model.background),(WINDOWWIDTH,WINDOWHEIGHT))
+        if isinstance (settings.background, str):
+            self.screen.image = pygame.transform.scale(pygame.image.load (self.model.background),(settings.window_width,settings.window_height))
         else:
-            self.screen.image.fill (self.model.background)
-
+            self.screen.image.fill(settings.background)
+        
         #put cards in play into a grid:
         if self.model.game != None:
             space_vert = 50
             # space_vert changes so that cards adjust themselves if more than 12
             # never more than 21, any collection of 20 cards must contain a Set
-            if len (self.model.game.in_play_cards) == 12:
-                space_vert = (WINDOW_HEIGHT - 4*CARD_HEIGHT - 2*top_margin) / 3
-            elif len (self.model.game.in_play_cards) == 15:
-                space_vert = (WINDOW_HEIGHT - 5*CARD_HEIGHT - 2*top_margin) / 4
-            elif len (self.model.game.in_play_cards) == 18:
-                space_vert = (WINDOW_HEIGHT - 6*CARD_HEIGHT - 2*top_margin) / 5
-            elif len (self.model.game.in_play_cards) == 21:
-                space_vert = (WINDOW_HEIGHT - 7*CARD_HEIGHT - 2*top_margin) / 6
+            if len(self.model.game.in_play_cards) == 12:
+                space_vert = (settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3
+            elif len(self.model.game.in_play_cards) == 15:
+                space_vert = (settings.window_height - 5*settings.card_height - 2*settings.top_margin) / 4
+            elif len(self.model.game.in_play_cards) == 18:
+                space_vert = (settings.window_height - 6*settings.card_height - 2*settings.top_margin) / 5
+            elif len(self.model.game.in_play_cards) == 21:
+                space_vert = (settings.window_height - 7*settings.card_height - 2*settings.top_margin) / 6
             
             # create positions of cards
-            positions = [(left_margin, top_margin), 
-                (left_margin + CARD_WIDTH + space_horiz, top_margin), 
-                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin),
+            positions = [(settings.left_margin, settings.top_margin), 
+                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin), 
+                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin),
 
-                (left_margin, top_margin + CARD_HEIGHT + space_vert),
-                (left_margin + CARD_WIDTH + space_horiz, top_margin + CARD_HEIGHT + space_vert),
-                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + CARD_HEIGHT + space_vert),
+                (settings.left_margin, settings.top_margin + settings.card_height + space_vert),
+                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + settings.card_height + space_vert),
+                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + settings.card_height + space_vert),
 
-                (left_margin, top_margin + 2*CARD_HEIGHT + 2*space_vert),
-                (left_margin + CARD_WIDTH + space_horiz, top_margin + 2*CARD_HEIGHT + 2*space_vert),
-                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 2*CARD_HEIGHT + 2*space_vert),
+                (settings.left_margin, settings.top_margin + 2*settings.card_height + 2*space_vert),
+                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 2*settings.card_height + 2*space_vert),
+                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 2*settings.card_height + 2*space_vert),
 
-                (left_margin, top_margin + 3*CARD_HEIGHT + 3*space_vert),
-                (left_margin + CARD_WIDTH + space_horiz, top_margin + 3*CARD_HEIGHT + 3*space_vert),
-                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 3*CARD_HEIGHT + 3*space_vert),
+                (settings.left_margin, settings.top_margin + 3*settings.card_height + 3*space_vert),
+                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 3*settings.card_height + 3*space_vert),
+                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 3*settings.card_height + 3*space_vert),
 
-                (left_margin, top_margin + 4*CARD_HEIGHT + 4*space_vert),
-                (left_margin + CARD_WIDTH + space_horiz, top_margin + 4*CARD_HEIGHT + 4*space_vert),
-                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 4*CARD_HEIGHT + 4*space_vert),
+                (settings.left_margin, settings.top_margin + 4*settings.card_height + 4*space_vert),
+                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 4*settings.card_height + 4*space_vert),
+                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 4*settings.card_height + 4*space_vert),
 
-                (left_margin, top_margin + 5*CARD_HEIGHT + 5*space_vert),
-                (left_margin + CARD_WIDTH + space_horiz, top_margin + 5*CARD_HEIGHT + 5*space_vert),
-                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 5*CARD_HEIGHT + 5*space_vert),
+                (settings.left_margin, settings.top_margin + 5*settings.card_height + 5*space_vert),
+                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 5*settings.card_height + 5*space_vert),
+                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 5*settings.card_height + 5*space_vert),
 
-                (left_margin, top_margin + 6*CARD_HEIGHT + 6*space_vert),
-                (left_margin + CARD_WIDTH + space_horiz, top_margin + 6*CARD_HEIGHT + 6*space_vert),
-                (left_margin + 2*CARD_WIDTH + 2*space_horiz, top_margin + 6*CARD_HEIGHT + 6*space_vert) 
+                (settings.left_margin, settings.top_margin + 6*settings.card_height + 6*space_vert),
+                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 6*settings.card_height + 6*space_vert),
+                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 6*settings.card_height + 6*space_vert) 
             ]
 
             # assign positions to cards in play
@@ -733,16 +677,17 @@ class View:
 
 		# add all actors to screen
 		for actor in self.model.actors:
-			self.screen.sub (actor)
+			self.screen.sub(actor)
 
-
+#class SimpleGame(Game):
+    
 class Practice:
     def __init__(self,screen,dur,lang):
         self.starttime = pygame.time.get_ticks()
         self.pagespecs = yaml.load(open(ROOT+'/pagespecs.yml'))
         self.lang = lang
         self.side = 'right' if lang == 'he' else 'left'
-        self.font = pygame.font.SysFont ("Arial",26)
+        self.font = pygame.font.SysFont(fontfamily,26)
         langdir = os.path.join(ROOT,'lang')
         self.trans = gettext.translation('setgame',langdir,[self.lang])
         self.trans.install()
@@ -769,10 +714,10 @@ class Practice:
     def compile_main(self):
         button_height = 50
         button_width = 100
-        self.main_area = pygame.Rect(0,0,WINDOW_WIDTH,WINDOW_HEIGHT - button_height)
-        nav_buttons_top = WINDOW_HEIGHT - button_height -  self.vert_space
-        self.next_button = planes.gui.Button("Next",pygame.Rect(WINDOW_WIDTH/2 - button_width - 10, nav_buttons_top,button_width,button_height),self.next_page,(0,0,190),WHITE,'practice_next')
-        self.prev_button = planes.gui.Button("Previous",pygame.Rect(WINDOW_WIDTH/2 + 10,nav_buttons_top,button_width,button_height),self.prev_page,(0,0,190),WHITE,'practice_prev')
+        self.main_area = pygame.Rect(0,0,settings.window_width,settings.window_height - button_height)
+        nav_buttons_top = settings.window_height - button_height -  self.vert_space
+        self.next_button = planes.gui.Button("Next",pygame.Rect(settings.window_width/2 - button_width - 10, nav_buttons_top,button_width,button_height),self.next_page,(0,0,190),WHITE,'practice_next')
+        self.prev_button = planes.gui.Button("Previous",pygame.Rect(settings.window_width/2 + 10,nav_buttons_top,button_width,button_height),self.prev_page,(0,0,190),WHITE,'practice_prev')
         #self.screen.image.fill(GREEN,self.main_area)
         self.incor = planes.gui.Label('incorrect_feedback',"",pygame.Rect(0,(self.main_area.height/2) - 70,self.main_area.width,70),(0,0,0),RED,self.font)
 
@@ -808,9 +753,9 @@ class Practice:
     def cards_row(self,data,vertstart):
         cards = list()
         positions = [
-            (left_margin, vertstart), 
-            (left_margin + CARD_WIDTH + space_horiz, vertstart), 
-            (left_margin + 2*CARD_WIDTH + 2*space_horiz, vertstart),
+            (settings.left_margin, vertstart), 
+            (settings.left_margin + settings.card_width + settings.space_horiz, vertstart), 
+            (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, vertstart),
         ]
         for i,spec in enumerate(data):
             spec = map(lambda x: str(x),spec)
@@ -819,7 +764,7 @@ class Practice:
             card.rect.y = positions[i][1]
             card.image = pygame.image.load(IMG+"/" + card.name + ".png")
             cards.append(card)
-        vertend = vertstart + CARD_HEIGHT + self.vert_space
+        vertend = vertstart + settings.card_height + self.vert_space
         return (vertend,cards)
 
     def next_page(self,button):
@@ -939,7 +884,7 @@ class Practice:
         
     def correct_feedback(self):
         self.register('practice_sequence_end',pygame.time.get_ticks())
-        cor = planes.gui.Label('correct_feedback',get_display(unicode(_('correct'),'utf-8')),pygame.Rect((self.main_area.width/2) - 250,(self.main_area.height/2) - 100,500,50),(0,0,0),GREEN,FONT_BIG)
+        cor = planes.gui.Label('correct_feedback',get_display(unicode(_('correct'),'utf-8')),pygame.Rect((self.main_area.width/2) - 250,(self.main_area.height/2) - 100,500,50),(0,0,0),GREEN,settings.bigfont)
         self.refresh(add=[cor])
         pygame.time.wait(2000)
         pygame.event.post(pygame.event.Event(pygame.QUIT)) 
@@ -967,8 +912,12 @@ class Practice:
 def play(frame,dur,lang,fullscreen):
     #if __name__ == "__main__":
     pygame.init()
-    size = (WINDOW_WIDTH, WINDOW_HEIGHT)
-    #screen = planes.Display(size)
+    info = pygame.display.Info()    
+    global settings
+    settings = GameSettings({
+        'window_width' : info.current_w,
+        'window_height' : info.current_h
+    })
     screen = planes.Display(frame,fullscreen)
     screen.grab = False
     screen.image.fill(BLACK)
@@ -1003,7 +952,7 @@ def play(frame,dur,lang,fullscreen):
 
 def practice(frame,dur,lang,fullscreen):
     pygame.init()
-    size = (WINDOW_WIDTH, WINDOW_HEIGHT)
+    size = (settings.window_width, settings.window_height)
     screen = planes.Display(frame,fullscreen)
     screen.grab = False
     screen.image.fill(BLACK)
