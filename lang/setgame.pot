@@ -46,3 +46,8 @@ msgstr ""
 msgid "correct"
 msgstr ""
 
+msgid "Sets on the Board: %d"
+msgstr ""
+
+msgid "Score: %d"
+msgstr ""

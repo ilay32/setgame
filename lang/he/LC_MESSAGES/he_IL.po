@@ -57,6 +57,18 @@ msgstr "המספר חוזר פעמיים"
 msgid "correct"
 msgstr "תשובה נכונה, הניסוי מתחיל..."
 
+msgid "Sets on the Board: %d"
+msgstr "קבוצות זמינות:  d%"
+
+msgid "Score: %d"
+msgstr "ניקוד: d%"
+
+#~ msgid "Sets on the Board: %s"
+#~ msgstr "קבוצות זמינות: %s"
+
+#~ msgid "Sets on the Board"
+#~ msgstr "קבוצות על המגרש"
+
 #~ msgid "color"
 #~ msgstr "צבע"
 

@@ -1,19 +1,14 @@
 #-*- coding: utf-8 -*-
 # Anne LoVerso
 # Python Set Game
-import pygame
-import math
+import pygame,random,time,math,planes,gettext
 from pygame.locals import *
-import random
-import time
-from abc import ABCMeta, abstractmethod
-import planes
+from Queue import Queue
+#from abc import ABCMeta, abstractmethod
 import planes.gui
 import os,yaml
 from bidi.algorithm import get_display
-from class_utils import Button
-from class_utils import ScreenText
-import gettext
+from class_utils import Button,ScreenText
 ROOT = os.path.dirname(os.path.realpath(__file__))
 IMG = os.path.join(ROOT,"img")
 BLACK = (0, 0, 0)
@@ -29,10 +24,9 @@ HARD = 1
 NUM_HINTS = 100
 TIME_DEDUC = 3000
 
-
 """
-this will take a few basic settings and compute
-the rest accordingly, so that the other classes more dynamic
+An instance of this will be pushed to global scope in runtime to make
+the whole thing more flexible while preserving class constructors elegance
 """
 class GameSettings:
     def __init__(self,settings=None):
@@ -41,7 +35,7 @@ class GameSettings:
         self.window_height = 768
         self.card_width = 200
         self.card_height = 100
-        self.fontfamily = "couriernew"
+        self.fontfamily = "arial"
         self.bigfontpx = 40
         self.smallfontpx = 20
         self.top_margin = 50
@@ -52,31 +46,70 @@ class GameSettings:
         self.shades = ['filled','shaded', 'empty']
         self.game_type = 'varied_number'
         self.background = BLACK
+        self.cardsdir = IMG+"/cards"
+        self.card_space = 20
 
         # possibly override them
-        if settings:
-            for key,val in settings.iteritems(): 
-                self.__dict__[key] = val
+        self.update(settings)
+                
         # derive the rest
         self.bigfont = pygame.font.SysFont(self.fontfamily, self.bigfontpx)
         self.smallfont = pygame.font.SysFont(self.fontfamily,self.smallfontpx)
-        if self.game_type == 'simple':
-            self.numbers = [1]
-            self.card_width = round(self.cards_width / 2)
-        self.space_horiz = ((3*self.window_width/4)-2*self.left_margin-3*self.card_width)/2
 
+        # layout
+        self.sidebar_width = 0.25*self.window_width
+        self.main_area_width = 0.75*self.window_width
+        self.main_area_height = self.window_height - self.smallfontpx  - 20
+        self.footer = pygame.Rect(self.left_margin,self.main_area_height,self.main_area_width,self.smallfontpx + 20)
+
+        if self.game_type == 'simple':
+            self.initial_cards_in = 9
+            self.numbers = [1]
+            self.cardsdir = IMG+"/cards/simple"
+        else:
+            self.initial_cards_in = 12
+            self.space_horiz = self.horiz_space()
+        self.cards_on_board = self.initial_cards_in 
+        self.card_dimensions() 
+
+    def update(self,newsettings):
+        if newsettings:
+            for key,val in newsettings.iteritems(): 
+                self.__dict__[key] = val
+        if 'card_width' in newsettings:
+            if self.game_type == 'simple':
+                self.simple_card_dimensions()
+            else:
+                self.space_horiz = self.horiz_space()
+
+    def card_dimensions(self):
+        numrows = self.cards_on_board / 3 #cards_on_board is either 9,12,15 or 21
+        self.card_width = int(math.floor((self.main_area_width - 3 * self.card_space - 2*self.left_margin) / 3))
+        self.card_height = int(math.floor((self.main_area_height - numrows * self.card_space - self.top_margin) / numrows))
+
+    def horiz_space(self):
+        self.space_horiz = (self.sidebar_width -2*self.left_margin -3*self.card_width)/2
 
 '''
 Given three cards, checks whether they form a Set
 Args: card1, card2, card3 - objects of type Card
 Returns: True if cards form a Set, False otherwise
 '''
-def check_set (card1, card2, card3):
-    color_check = all_same_or_all_diff (card1.color, card2.color, card3.color)
-    shape_check = all_same_or_all_diff (card1.shape, card2.shape, card3.shape)
-    num_check = all_same_or_all_diff (card1.number, card2.number, card3.number)
-    shade_check = all_same_or_all_diff (card1.shade, card2.shade, card3.shade)
+def check_set(card1, card2, card3):
+    color_check = all_same_or_all_diff(card1.color, card2.color, card3.color)
+    shape_check = all_same_or_all_diff(card1.shape, card2.shape, card3.shape)
+    num_check = all_same_or_all_diff(card1.number, card2.number, card3.number)
+    shade_check = all_same_or_all_diff(card1.shade, card2.shade, card3.shade)
     return color_check and shape_check and num_check and shade_check
+
+def triplets(n):
+    for i in range(n):
+        for j in range(i+1,n):
+            for k in range(j+1,n):
+                yield (i,j,k)
+
+def translate(s):
+    return get_display(unicode(_(s),'utf-8'))
 
 '''
 Given three attributes (one from each of three cards), checks whether the
@@ -113,7 +146,7 @@ class Card(planes.Plane):
         self.shade = shade
         self.been_clicked = False
         self.name = color + shape + shade + str (number)
-        planes.Plane.__init__ (self, self.name, pygame.Rect(0,0,settings.card_width,settings.card_height), False, False)
+        planes.Plane.__init__ (self, self.name, pygame.Rect(0,0,0,0), False, False)
 
     def __eq__ (self, other):
         if isinstance(other,Card):
@@ -130,14 +163,10 @@ class Card(planes.Plane):
     def clicked (self, button_name):
         self.been_clicked = not self.been_clicked
 
-    def update (self):
+    def update(self):
         pass
 
-class CardSingle(Card):
-    def __init__(self,color,shape,shade):
-        super(self,CardSingle).__init__(color,shape,1,shade)
-        self.name = color + shape + shade
-    
+   
 '''
 The TimeBox is a box that serves as a timer, slowly moving down and filling the screen
 '''
@@ -362,15 +391,14 @@ class StatsButton (Button):
 '''
 A Game is a single game that ends when won, lost or cancelled
 '''      
-class Game():
-    def __init__(self, game_select, model,duration):
+class Game:
+    def __init__(self,model):
         ########################
         # GAME SCREEN ELEMENTS #
         ########################
         self.deck = []
-
         self.model = model
-        self.game_select = game_select
+        self.game_select = NOTIME
 
         self.pause_time = 0
         self.paused_time_at = 0
@@ -378,21 +406,11 @@ class Game():
         self.start_time = pygame.time.get_ticks()
         self.end_time = 0 # time game ended at
 
-        self.duration = duration
-
-        #make 81 unique cards, add to deck
-        for color in settings.colors:
-            for shape in settings.shapes:
-                for number in settings.numbers:
-                    for shade in settings.shades:
-                        card_to_add = Card(color, shape, number, shade)
-                        self.deck.append(card_to_add)
-                        card_to_add.image = pygame.image.load (IMG+"/" + card_to_add.name + ".png")
 
         self.actors = []
         self.in_play_cards = []
         self.clicked_cards = []
-        self.out_of_play_cards = []
+        #self.out_of_play_cards = []
 
         self.sets_found = 0
         self.sets_wrong = 0 # should we take off points for these?
@@ -401,15 +419,31 @@ class Game():
         # tells if we have already added the game time to the times []
         # prevents from adding the time on every update loop
         self.added_time = False
+        self.compile_cards()
+        self.add_new_cards(settings.initial_cards_in) 
         self.compile_elements()
-        # start the game
-        self.add_new_cards(12)
+    
+    def compile_cards(self):
+        #make number*shape*color*fill unique cards, add to deck
+        for color in settings.colors:
+            for shape in settings.shapes:
+                for number in settings.numbers:
+                    for shade in settings.shades:
+                        card_to_add = Card(color, shape, number, shade)
+                        self.deck.append(card_to_add)
+                        card_to_add.image = pygame.image.load(settings.cardsdir+"/" + card_to_add.name + ".png")
+        random.shuffle(self.deck)
+    
+    def update_card_dimensions(self):
+        for card in self.deck:
+           card.rect = pygame.Rect(0,0,settings.card_width,settings.card_height)
+           card.image = pygame.transform.scale(card.image,(settings.card_width, settings.card_height))
 
     def compile_elements(self):
         self.sets_found_label = ScreenText("sets_found_label","Sets: " + str(self.sets_found),pygame.Rect(3*settings.window_width/4, 290, settings.window_width/4, 50),settings.bigfont)
-        self.time_label = ScreenText ("time_label", "Time: " + format_secs (self.duration / 1000), pygame.Rect (3*settings.window_width/4, 220, settings.window_width/4, 100), settings.bigfont)
+        self.time_label = ScreenText ("time_label", "Time: " + format_secs (settings.duration / 1000), pygame.Rect (3*settings.window_width/4, 220, settings.window_width/4, 100), settings.bigfont)
 
-        self.left_in_deck_label = ScreenText("left_in_deck_label", "Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))), pygame.Rect (3*settings.window_width/4, 505, settings.window_width/4, 25), settings.smallfont) 
+        #self.left_in_deck_label = ScreenText("left_in_deck_label", "Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))), pygame.Rect (3*settings.window_width/4, 505, settings.window_width/4, 25), settings.smallfont) 
 
         self.add3_button = AddThreeCardsButton ("add_three_cards_button", pygame.Rect (3*settings.window_width/4 + (settings.window_width/4 - 200)/2, 360, 100, 100), AddThreeCardsButton.clicked, self)
 
@@ -433,7 +467,8 @@ class Game():
 
         #### CATEGORIES ####
         self.gamebuttons = [self.add3_button, self.hint_button, self.pause_button, self.logo]
-        self.gamelabels = [self.sets_found_label, self.time_label, self.hints_left_label, self.left_in_deck_label]
+        #self.gamelabels = [self.sets_found_label, self.time_label, self.hints_left_label, self.left_in_deck_label]
+        self.gamelabels = [self.sets_found_label, self.time_label, self.hints_left_label]
         self.pausebuttons = [self.play_button, self.restart_button, self.back_button]
 
         
@@ -442,14 +477,15 @@ class Game():
     # Index allows adding 1 card in the same position as a removed card
     # Does not check whether we SHOULD because assumes we have checked that before calling
     def add_new_cards (self, number, index=0):
-        if not len (self.in_play_cards) + len (self.out_of_play_cards) == len (self.deck):
-			i = 0
-			while i < number:
-				num = random.randint (0,len (self.deck)-1)
-				card = self.deck[num]
-				if card not in self.in_play_cards and card not in self.out_of_play_cards:
-					self.in_play_cards.insert (index, card)
-					i += 1
+        #if not len (self.in_play_cards) + len (self.out_of_play_cards) == len (self.deck):
+        i = 0
+        while i < number:
+            num = random.randint (0,len (self.deck)-1)
+            card = self.deck[num]
+            #if card not in self.in_play_cards and card not in self.out_of_play_cards:
+            if card not in self.in_play_cards:
+                self.in_play_cards.insert (index, card)
+                i += 1
 
 	# Checks if any sets on the board
     def check_if_any_sets (self):
@@ -462,147 +498,131 @@ class Game():
 		return False
 
     # Checks if game is won
-    def check_if_won (self):
-        return (not self.check_if_any_sets()) and (len (self.in_play_cards) + len (self.out_of_play_cards) == len (self.deck))
+    def check_if_won(self):
+        return False
+        #return (not self.check_if_any_sets()) and (len (self.in_play_cards) + len (self.out_of_play_cards) == len (self.deck))
 
     # Game can only be lost if playing in time mode
-    def check_if_lost (self):
-        return self.time_box.rect.y >= 0
+    def check_if_lost(self):
+        return False
+        #return self.time_box.rect.y >= 0
 
     # Game can only be lost if playing in time mode
-    def check_in_play (self):
-        return not self.check_if_won() and not self.check_if_lost() and self.paused_time_at == 0 
+    def check_in_play(self):
+        #return not self.check_if_won() and not self.check_if_lost() and self.paused_time_at == 0 
+        return True
 
-	# Called infinitely
+    # Called infinitely
     def update (self):
-		# if game not in play, display messages, not cards
-		if not self.check_in_play():
-			self.actors = []
-			self.actors += self.gamelabels + self.gamebuttons
-			self.hints_left_label.update_text ("Hints Remaining: " + str (self.hints_left))
-			self.left_in_deck_label.update_text ("Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))))
-
-			message_box = planes.Plane ('message_box',
-										pygame.Rect (settings.left_margin, 
-													settings.top_margin, 
-													3*settings.card_width + 2*settings.space_horiz, 
-													4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)))
-			message_box.image.fill ((0,0,0))
-			message_texts = []
+        # if game not in play, display messages, not cards
+        if not self.check_in_play():
+            self.actors = []
+            self.actors += self.gamelabels + self.gamebuttons
+            self.hints_left_label.update_text ("Hints Remaining: " + str (self.hints_left))
+            self.left_in_deck_label.update_text ("Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))))
+            message_box = planes.Plane ('message_box', pygame.Rect (settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.space_horiz, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)))
+            message_box.image.fill ((0,0,0))
+            message_texts = []
 
 			# if game won or lost, note time game ended
-			if self.check_if_won() or self.check_if_lost():
-				if self.end_time == 0:
-					self.end_time = pygame.time.get_ticks()
-
-				total_time = self.end_time - self.start_time - self.pause_time
-
-				if self.check_if_won() and not self.added_time:
-					self.model.add_time((total_time+(self.sets_wrong*TIME_DEDUC))/ 1000)
-					self.added_time = True
-
-				best_time = ""
-				if len(self.model.times) == 0:
-					best_time = format_secs (total_time/ 1000)
-				else:
-					best_time = format_secs (min (self.model.times))
-
-				win_stats = "Game Complete! \n" + \
-							"Total time: " + format_secs ((self.end_time - self.start_time - self.pause_time)/ 1000) + "\n" +\
-							"Best time: " + best_time
-
-				win_stats_with_loss = "Game Complete! \n" + \
+            if self.check_if_won() or self.check_if_lost():
+                if self.end_time == 0:
+                    self.end_time = pygame.time.get_ticks()
+                total_time = self.end_time - self.start_time - self.pause_time
+                if self.check_if_won() and not self.added_time:
+                    self.model.add_time((total_time+(self.sets_wrong*TIME_DEDUC))/ 1000)
+                    self.added_time = True
+            
+                best_time = ""
+                if len(self.model.times) == 0:
+                    best_time = format_secs (total_time/ 1000)
+                else:
+                    best_time = format_secs (min (self.model.times))
+                win_stats = "Game Complete! \n" + \
+                "Total time: " + format_secs ((self.end_time - self.start_time - self.pause_time)/ 1000) + "\n" +\
+                "Best time: " + best_time
+                win_stats_with_loss = "Game Complete! \n" + \
 									  "Total time: " + format_secs (total_time/ 1000) + "\n" +\
 									  "Incorrect Sets: " + str(self.sets_wrong) + "\n" +\
 									  "Adjusted Time: " + format_secs ((total_time+(self.sets_wrong*TIME_DEDUC))/ 1000) + "\n" +\
 									  "Best time: " + best_time
+                lose_stats = "Game Over!"
 
-				lose_stats = "Game Over!"
-
-				stats = win_stats_with_loss
-				if self.check_if_lost():
-					stats = lose_stats
-
-				lines = stats.split ("\n")
-				box_width = 3*settings.card_width + 2*settings.space_horiz
-				for line in lines:
-					message_texts.append (ScreenText (line, line, 
-										pygame.Rect(settings.left_margin, settings.top_margin + 50*(lines.index(line)+1) ,box_width, 45), settings.bigfont))
-
-			elif self.paused_time_at != 0: #game is paused
-				message_texts.append (ScreenText ("message_text", "Game Paused",
-										pygame.Rect (settings.left_margin, 
-													settings.top_margin, 
-													3*settings.card_width + 2*settings.space_horiz, 
-													4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)),
-										settings.bigfont))
-				
-			self.actors.append (message_box)
-			self.actors += message_texts
-			self.actors += self.pausebuttons
-
-		# game in play
-		else:
-			self.time_box.update()
-			self.actors = [self.time_box]
-
-			#check which cards are clicked
-			self.clicked_cards = []
-			for card in self.in_play_cards:
-				self.actors.append (card)
-				if card.been_clicked:
-					self.clicked_cards.append (card)
-				card.update()
-
-			#add click boxes
-			for card in self.clicked_cards:
-				clicked_box = planes.Plane ("box" + card.name,
-											pygame.Rect (card.rect.x-5,
-														 card.rect.y-5,
-														 card.rect.width + 10,
-														 card.rect.height + 10),
-											False, False)
-				clicked_box.image = pygame.image.load (IMG+"/clickbox.png")
-				self.actors.insert (1, clicked_box)
-
-			#check for sets
-			if len(self.clicked_cards) == 3:
-				is_set = check_set (self.clicked_cards[0], 
-									self.clicked_cards[1],
-									self.clicked_cards[2])
-				if is_set:
-					self.sets_found += 1
-					self.sets_found_label.update_text ("Sets: " + str (self.sets_found))
-
-					# reset the time box
-					self.time_box.rect.y = -settings.window_height
-
-					#remove cards and add new ones
-					for card in self.clicked_cards:
-						self.out_of_play_cards.append (card)
-						index = self.in_play_cards.index (card)
-						self.in_play_cards.remove (card)
-						if len (self.in_play_cards) < 12:
-							self.add_new_cards (1, index)
-				else:
-					self.sets_wrong += 1
-				for card in self.clicked_cards:
-					card.been_clicked = False
+                stats = win_stats_with_loss
+                if self.check_if_lost():
+                    stats = lose_stats
                 
-                self.actors += self.gamelabels + self.gamebuttons
-                self.time_label.update_text("Time: " + format_secs((self.duration - (pygame.time.get_ticks() - self.start_time - self.pause_time))/ 1000))
-                self.hints_left_label.update_text ("Hints Remaining: " + str (self.hints_left))
-                self.left_in_deck_label.update_text ("Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))))
+                lines = stats.split ("\n")
+                box_width = 3*settings.card_width + 2*settings.space_horiz
+                for line in lines:
+                    message_texts.append(ScreenText (line, line, pygame.Rect(settings.left_margin, settings.top_margin + 50*(lines.index(line)+1) ,box_width, 45), settings.bigfont))
 
+            elif self.paused_time_at != 0 : #game is paused
+                message_texts.append (ScreenText ("message_text", "Game Paused", pygame.Rect(settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.space_horiz, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)), settings.bigfont))
+            self.actors.append (message_box)
+            self.actors += message_texts
+            self.actors += self.pausebuttons
+        
+        # game in play
+        else:
+            self.time_box.update()
+            self.actors = [self.time_box]
+
+            #check which cards are clicked
+            self.clicked_cards = []
+            for card in self.in_play_cards:
+                self.actors.append (card)
+                if card.been_clicked:
+                    self.clicked_cards.append(card)
+                card.update()
+
+            #add click boxes
+            for card in self.clicked_cards:
+                clicked_box = planes.Plane ("box" + card.name, pygame.Rect (card.rect.x-5, card.rect.y-5, card.rect.width + 10, card.rect.height + 10), False, False) 
+                im =  pygame.image.load (IMG+"/clickbox.png") 
+                im = pygame.transform.scale(im,(settings.card_width+10,settings.card_height+10))
+                clicked_box.image = im
+                self.actors.insert (1, clicked_box)
+            
+            #check for sets
+            if len(self.clicked_cards) == 3:
+                if check_set(*self.clicked_cards):
+                    self.sets_found += 1
+                    #remove cards and add new ones
+                    for card in self.clicked_cards:
+                        #self.out_of_play_cards.append(card)
+                        index = self.in_play_cards.index(card)
+                        self.in_play_cards.remove(card)
+                        if len(self.in_play_cards) < settings.initial_cards_in:
+                            self.add_new_cards (1, index)
+                    if self.sets_found % (settings.initial_cards_in + 6) == 0:
+                        random.shuffle(self.deck)
+                    self.set_found()
+                else:
+                    self.sets_wrong += 1
+                for card in self.clicked_cards:
+                    card.been_clicked = False
+            
+            self.actors += self.gamelabels + self.gamebuttons
+            self.update_game_data() 
+    
+    def set_found(self):
+        self.time_box.rect.y = -settings.window_height
+        self.sets_found_label.update_text("Sets: " + str(self.sets_found))
+        
+    def update_game_data(self): 
+        self.time_label.update_text("Time: " + format_secs((settings.duration - (pygame.time.get_ticks() - self.start_time - self.pause_time))/ 1000))
+        self.hints_left_label.update_text ("Hints Remaining: " + str (self.hints_left))
+        #self.left_in_deck_label.update_text ("Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))))
+    
 '''
 The Model is the overall object in controlling the entire program
 It instantiates Game objects as needed but also contains home screen
 '''
 class Model:
-    def __init__ (self,dur):
+    def __init__ (self):
         self.mode = MODE_GAME
-        self.game_select = NOTIME
-        self.game = Game(NOTIME, self,dur)
+        self.game = SimpleGame(self) if settings.game_type == 'simple' else  Game(self)
         self.actors = []
         self.show_stats = [] # a list of things for stats screen
 
@@ -618,7 +638,6 @@ class View:
     def __init__ (self, model, screen):
         self.model = model
         self.screen = screen
-
     def draw (self):
         self.screen.remove_all()
         if isinstance (settings.background, str):
@@ -628,48 +647,19 @@ class View:
         
         #put cards in play into a grid:
         if self.model.game != None:
-            space_vert = 50
-            # space_vert changes so that cards adjust themselves if more than 12
-            # never more than 21, any collection of 20 cards must contain a Set
-            if len(self.model.game.in_play_cards) == 12:
-                space_vert = (settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3
-            elif len(self.model.game.in_play_cards) == 15:
-                space_vert = (settings.window_height - 5*settings.card_height - 2*settings.top_margin) / 4
-            elif len(self.model.game.in_play_cards) == 18:
-                space_vert = (settings.window_height - 6*settings.card_height - 2*settings.top_margin) / 5
-            elif len(self.model.game.in_play_cards) == 21:
-                space_vert = (settings.window_height - 7*settings.card_height - 2*settings.top_margin) / 6
-            
-            # create positions of cards
-            positions = [(settings.left_margin, settings.top_margin), 
-                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin), 
-                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin),
-
-                (settings.left_margin, settings.top_margin + settings.card_height + space_vert),
-                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + settings.card_height + space_vert),
-                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + settings.card_height + space_vert),
-
-                (settings.left_margin, settings.top_margin + 2*settings.card_height + 2*space_vert),
-                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 2*settings.card_height + 2*space_vert),
-                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 2*settings.card_height + 2*space_vert),
-
-                (settings.left_margin, settings.top_margin + 3*settings.card_height + 3*space_vert),
-                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 3*settings.card_height + 3*space_vert),
-                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 3*settings.card_height + 3*space_vert),
-
-                (settings.left_margin, settings.top_margin + 4*settings.card_height + 4*space_vert),
-                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 4*settings.card_height + 4*space_vert),
-                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 4*settings.card_height + 4*space_vert),
-
-                (settings.left_margin, settings.top_margin + 5*settings.card_height + 5*space_vert),
-                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 5*settings.card_height + 5*space_vert),
-                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 5*settings.card_height + 5*space_vert),
-
-                (settings.left_margin, settings.top_margin + 6*settings.card_height + 6*space_vert),
-                (settings.left_margin + settings.card_width + settings.space_horiz, settings.top_margin + 6*settings.card_height + 6*space_vert),
-                (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, settings.top_margin + 6*settings.card_height + 6*space_vert) 
-            ]
-
+            settings.update({'cards_on_board' :  len(self.model.game.in_play_cards)})            
+            positions = list()
+            n = 0
+            row = 0
+            left = settings.left_margin
+            top = settings.top_margin
+            while n < settings.cards_on_board:
+                for column in range(3):
+                    positions.append((left + column*(settings.card_width+settings.card_space),top)) 
+                row += 1
+                top = row*(settings.card_height + settings.card_space) + settings.top_margin 
+                n += 3
+            self.model.game.update_card_dimensions()  
             # assign positions to cards in play
             for i in range (len (self.model.game.in_play_cards)):
                 self.model.game.in_play_cards[i].rect.x = positions[i][0]
@@ -679,18 +669,50 @@ class View:
 		for actor in self.model.actors:
 			self.screen.sub(actor)
 
-#class SimpleGame(Game):
+class SimpleGame(Game):
+    def __init__(self,model):
+        Game.__init__(self,model)
+        self.last_detect = pygame.time.get_ticks()
+        self.detect_time = 0
+        self.score = 0
+
     
+    def compile_elements(self):
+        self.score_label = ScreenText("score_label",translate("Score: %d") % 0,pygame.Rect(3*settings.window_width/4, 290, settings.window_width/4, 50),settings.smallfont)
+        self.available = ScreenText("available_sets_label",translate("Sets on the Board: %d")  % self.sets_avail(),settings.footer,settings.smallfont)
+        self.time_label = ScreenText ("time_label", "", pygame.Rect (3*settings.window_width/4, 220, settings.window_width/4, 100), settings.smallfont)
+        self.time_box = TimeBox ("time_box", pygame.Rect (0, -settings.window_height, settings.window_width, settings.window_height), self.game_select)
+        #message_width = 3*settings.card_width + 2*settings.space_horiz # width of playing field
+        self.gamebuttons = []
+        self.gamelabels = [self.score_label, self.time_label,self.available]
+        self.pausebuttons = []
+    
+    def set_found(self):
+        self.last_detect = self.detect_time
+        self.detect_time = pygame.time.get_ticks()
+        self.score += int(round(100/((self.detect_time - self.last_detect)/1000)))
+        self.score_label.update_text(translate("Score: %d")  % self.score)
+        self.available.update_text(translate("Sets on the Board: %d")  % self.sets_avail())
+    
+    def sets_avail(self):
+        ans = 0
+        for trip in triplets(settings.initial_cards_in):
+            if check_set(*[card for i,card in enumerate(self.in_play_cards) if i in trip]):
+                ans += 1 
+        return ans
+    
+    def update_game_data(self): 
+        self.time_label.update_text(format_secs((settings.duration - (pygame.time.get_ticks() - self.start_time - self.pause_time))/ 1000))
+    
+        
 class Practice:
-    def __init__(self,screen,dur,lang):
+    def __init__(self,screen,lang):
         self.starttime = pygame.time.get_ticks()
         self.pagespecs = yaml.load(open(ROOT+'/pagespecs.yml'))
         self.lang = lang
         self.side = 'right' if lang == 'he' else 'left'
         self.font = pygame.font.SysFont(fontfamily,26)
         langdir = os.path.join(ROOT,'lang')
-        self.trans = gettext.translation('setgame',langdir,[self.lang])
-        self.trans.install()
         self.current_page = 0
         self.currently_on_screen = list()
         self.text_lines = 1
@@ -701,7 +723,6 @@ class Practice:
         self.compile_pages()
         self.numpages = len(self.pages) + 1
         self.show_page(0)
-        self.practice_duration = dur
         self.return_vars = {
             'practice_game_start': 0,
             'practice_sequence_end': 0,
@@ -746,10 +767,10 @@ class Practice:
         for line in data:
             lineid = "line"+str(line)
             vertpos += lineheight + linespacing
-            lines.append(ScreenText(lineid,get_display(unicode(_(lineid),'utf-8')),pygame.Rect(0,vertpos,self.main_area.width,lineheight),self.font,self.side))
+            lines.append(ScreenText(lineid,translate(lineid),pygame.Rect(0,vertpos,self.main_area.width,lineheight),self.font,self.side))
             self.text_lines += 1
         return (vertpos + self.vert_space,lines)
-    
+     
     def cards_row(self,data,vertstart):
         cards = list()
         positions = [
@@ -809,7 +830,7 @@ class Practice:
 
     def practice_game(self):
         self.register('practice_game_start',pygame.time.get_ticks() - self.starttime)
-        pygame.time.set_timer(pygame.USEREVENT,self.practice_duration)
+        pygame.time.set_timer(pygame.USEREVENT,settings.duration)
         time.sleep(0.1)
         self.screen.remove_all()
         cards = list()
@@ -906,69 +927,75 @@ class Practice:
 
         return message.strip(" ,")
         
-
-
-# THE MAIN LOOP
-def play(frame,dur,lang,fullscreen):
-    #if __name__ == "__main__":
-    pygame.init()
-    info = pygame.display.Info()    
-    global settings
-    settings = GameSettings({
-        'window_width' : info.current_w,
-        'window_height' : info.current_h
-    })
-    screen = planes.Display(frame,fullscreen)
-    screen.grab = False
-    screen.image.fill(BLACK)
-    model = Model(dur)
-    view = View(model,screen)
-    running = True
-    pygame.time.set_timer(pygame.QUIT,dur)
-    ret = dict()
-    while running:
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT:
-                #raise SystemExit
-                running = False
-                ret =  {
-                    "sets_found" : view.model.game.sets_found,
-                    "sets_wrong" : view.model.game.sets_wrong
-                }
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+class RunGame:
+    def __init__(self,**kwargs):
+        langdir = os.path.join(ROOT,'lang')
+        trans = gettext.translation('setgame',langdir,[kwargs['language']])
+        trans.install()
+        pygame.init()
+        info = pygame.display.Info()   
+        self.dur = kwargs['duration']
+        self.mode = kwargs['mode']
+        global settings
+        settings = GameSettings({
+            'window_width' : math.floor(info.current_w),
+            'window_height' : math.floor(info.current_h),
+            'fontfamily' : 'couriernew',
+            'bigfontpx' : 35,
+            'smallfontpx' : 20,
+            'game_type' : 'simple',
+            'duration' : self.dur
+        })
+        screen = planes.Display(kwargs['frame'],kwargs['fullscreen'])
+        screen.grab = False
+        screen.image.fill(BLACK)
+        self.screen = screen
+    
+    def runner(self) :
+        return eval('self.'+self.mode)
+    
+    def play(self):
+        model = Model()
+        view = View(model,self.screen)
+        running = True
+        pygame.time.set_timer(pygame.QUIT,self.dur)
+        ret = dict()
+        while running:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
                     running = False
-                ret = "keyboard interrupt"
+                    ret =  {
+                        "sets_found" : view.model.game.sets_found,
+                        "sets_wrong" : view.model.game.sets_wrong
+                    }
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                    ret = "keyboard interrupt"
 
-        screen.process(events)
-        model.update()
-        screen.update()
-        screen.render()
-        view.draw()
-        pygame.display.flip()
-        time.sleep (.001)
-    return ret
-
-def practice(frame,dur,lang,fullscreen):
-    pygame.init()
-    size = (settings.window_width, settings.window_height)
-    screen = planes.Display(frame,fullscreen)
-    screen.grab = False
-    screen.image.fill(BLACK)
-    view = Practice(screen,dur,lang)
-    running = True
-    while running:
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT:
-                running = False
-                ret =  view.return_vars            
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+            self.screen.process(events)
+            model.update()
+            self.screen.update()
+            self.screen.render()
+            view.draw()
+            pygame.display.flip()
+            time.sleep (.001)
+        return ret
+    
+    def practice(self):
+        view = Practice(screen,dur,lang)
+        running = True
+        while running:
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.QUIT:
                     running = False
-                ret = "keyboard interrupt"
-        screen.process(events)
-    return ret
-
+                    ret =  view.return_vars            
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                    ret = "keyboard interrupt"
+            screen.process(events)
+        return ret
 
