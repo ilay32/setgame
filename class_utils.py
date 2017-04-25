@@ -63,11 +63,11 @@ class ScreenText(gui.Label):
         size = font.size(text)
         if align is not None and size[0] < rect.width:
             diff = rect.width - size[0]
-            pad = " "*int(math.floor(diff/font.size(" ")[0]))
+            pad = " "*(int(math.floor(diff/font.size(" ")[0])) - 1)
             if align == 'right':
-                text = pad +  text
+                text = pad +  text + " "
             elif align == 'left':
-                text += pad
+                text = " " + text + pad
 
         gui.Label.__init__(self, name, text, rect, self.background_color, self.text_color, font)
     def update_text(self, text):

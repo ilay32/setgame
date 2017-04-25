@@ -12,32 +12,59 @@ msgstr ""
 "X-Generator: Poedit 1.8.7.1\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "line1"
+msgid "line1 varied number"
 msgstr "במשחק הקבוצות צריך למצוא קבוצות"
 
-msgid "line2"
-msgstr "כל קלף מתאפיין בארבע תכונות: צבע, צורה, מספר ומילוי"
+msgid "line2 varied number"
+msgstr "כל קלף מתאפיין בארבע תכונות: צורה, צבע מספר ומילוי"
 
-msgid "line3"
-msgstr "קבוצה היא סדרה של שלושה קלפים שבה כל תכונה או שווה בכל הקלפים או שונה בכולם"
+msgid "line3 varied number"
+msgstr "קבוצה היא סדרה של שלושה קלפים שבה כל התכונות שוות או שונות בכל הקלפים"
 
-msgid "line4"
-msgstr "שורה סתם"
-
-msgid "line5"
+msgid "line4 varied number"
 msgstr "למשל, זאת קבוצה:"
 
-msgid "line6"
-msgstr "כי הצורה זהה בכל שלושת הקלפים ושאר התכונות שונות בכולם"
-
-msgid "line7"
+msgid "line5 varied number"
 msgstr "אבל זאת לא:"
 
-msgid "line8"
-msgstr "כי  הצורה והמספר זהים רק בשניים מהקלפים (לא אותם שניים) "
+msgid "line6 varied number"
+msgstr "כי ככה ככה"
 
-msgid "line9"
-msgstr "במסך הבא מסתתרת קבוצה אחת.  אחרי שתימצא,  יתחיל הניסוי."
+msgid "line7 varied number"
+msgstr "במסך הבא יתחיל המשחק"
+
+msgid "line8 varied number"
+msgstr ""
+
+msgid "line9 varied number"
+msgstr ""
+
+msgid "line1 simple"
+msgstr "במשחק הקבוצות צריך למצוא קבוצות"
+
+msgid "line2 simple"
+msgstr "כל קלף מתאפיין בשלוש תכונות: צבע, צורה ומילוי"
+
+msgid "line3 simple"
+msgstr "קבוצה היא סדרה של שלושה קלפים שבה כל תכונה או שווה"
+
+msgid "line4 simple"
+msgstr "בכל הקלפים או שונה בכולם, כלומר אין תכונה שחוזרת בדיוק פעמיים."
+
+msgid "line5 simple"
+msgstr "למשל, זאת קבוצה:"
+
+msgid "line6 simple"
+msgstr "אבל זאת לא:"
+
+msgid "line7 simple"
+msgstr "כי הצורה והמילוי שווים בשני קלפים."
+
+msgid "line8 simple"
+msgstr ""
+
+msgid "line9 simple"
+msgstr ""
 
 msgid "next"
 msgstr "המשך"
@@ -62,6 +89,33 @@ msgstr "קבוצות זמינות:  d%"
 
 msgid "Score: %d"
 msgstr "ניקוד: d%"
+
+#~ msgid "line1"
+#~ msgstr "במשחק הקבוצות צריך למצוא קבוצות"
+
+#~ msgid "line2"
+#~ msgstr "כל קלף מתאפיין בארבע תכונות: צבע, צורה, מספר ומילוי"
+
+#~ msgid "line3"
+#~ msgstr "קבוצה היא סדרה של שלושה קלפים שבה כל תכונה או שווה בכל הקלפים או שונה בכולם"
+
+#~ msgid "line4"
+#~ msgstr "שורה סתם"
+
+#~ msgid "line5"
+#~ msgstr "למשל, זאת קבוצה:"
+
+#~ msgid "line6"
+#~ msgstr "כי הצורה זהה בכל שלושת הקלפים ושאר התכונות שונות בכולם"
+
+#~ msgid "line7"
+#~ msgstr "אבל זאת לא:"
+
+#~ msgid "line8"
+#~ msgstr "כי  הצורה והמספר זהים רק בשניים מהקלפים (לא אותם שניים) "
+
+#~ msgid "line9"
+#~ msgstr "במסך הבא מסתתרת קבוצה אחת.  אחרי שתימצא,  יתחיל הניסוי."
 
 #~ msgid "Sets on the Board: %s"
 #~ msgstr "קבוצות זמינות: %s"

@@ -1,32 +1,60 @@
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "line1"
+msgid "line1 varied number"
 msgstr ""
 
-msgid "line2"
+msgid "line2 varied number"
 msgstr ""
 
-msgid "line3"
+msgid "line3 varied number"
 msgstr ""
 
-msgid "line4"
+msgid "line4 varied number"
 msgstr ""
 
-msgid "line5"
+msgid "line5 varied number"
 msgstr ""
 
-msgid "line6"
+msgid "line6 varied number"
 msgstr ""
 
-msgid "line7"
+msgid "line7 varied number"
 msgstr ""
 
-msgid "line8"
+msgid "line8 varied number"
 msgstr ""
 
-msgid "line9"
+msgid "line9 varied number"
 msgstr ""
+
+msgid "line1 simple"
+msgstr ""
+
+msgid "line2 simple"
+msgstr ""
+
+msgid "line3 simple"
+msgstr ""
+
+msgid "line4 simple"
+msgstr ""
+
+msgid "line5 simple"
+msgstr ""
+
+msgid "line6 simple"
+msgstr ""
+
+msgid "line7 simple"
+msgstr ""
+
+msgid "line8 simple"
+msgstr ""
+
+msgid "line9 simple"
+msgstr ""
+
 
 msgid "next"
 msgstr ""

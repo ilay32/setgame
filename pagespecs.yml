@@ -1,7 +1,7 @@
 page1: 
   -
     type: text
-    lines: [1,2,3] 
+    lines: [1,2,3,4] 
 
 page2:
   - 
@@ -11,94 +11,133 @@ page2:
   - 
     type: cardsrow
     cards:
-      -
-        - red
-        - diamond
-        - shaded
-        - 3
-      -
-        - purple
-        - diamond
-        - filled
-        - 2
-      - 
-        - green
-        - diamond
-        - empty
-        - 1
+      varied_number:
+        -
+          - red
+          - diamond
+          - shaded
+          - 3
+        -
+          - purple
+          - diamond
+          - filled
+          - 2
+        - 
+          - green
+          - diamond
+          - empty
+          - 1
+      simple:
+        -
+          - purple
+          - diamond
+          - empty
+          - 1
+        -
+          - green
+          - oval
+          - shaded
+          - 1
+        - 
+          - red
+          - squiggle
+          - filled
+          - 1
   -
     type: text
-    lines: [6,7]
+    lines: [6]
   
   - 
     type: cardsrow
     cards:
+      varied_number:
+        -
+          - green
+          - diamond
+          - shaded
+          - 3
+        - 
+          - green
+          - oval
+          - empty
+          - 3
+        -
+          - green
+          - diamond
+          - filled
+          - 2
+      simple:
+        -
+          - green
+          - diamond
+          - empty
+          - 1
+        -
+          - green
+          - squiggle
+          - shaded
+          - 1
+        - 
+          - green
+          - diamond
+          - shaded
+          - 1
+  -
+    type: text
+    lines: [7,8]
+  
+practice_game:
+  varied_number:
+    row1:
       -
-        - green
-        - diamond
-        - shaded
-        - 3
-      - 
-        - green
-        - oval
+        - purple
+        - squiggle
         - empty
         - 3
       -
+        - red
+        - oval
+        - empty
+        - 1
+      -
+        - purple
+        - squiggle
+        - shaded
+        - 1
+    row2:
+      - 
+        - red
+        - oval
+        - shaded
+        - 2
+      - 
+        - red
+        - diamond
+        - empty
+        - 3
+      -
+        - purple
+        - squiggle
+        - empty
+        - 2
+    row3:
+      - 
+        - purple
+        - oval
+        - empty
+        - 2
+      - 
         - green
         - diamond
         - filled
         - 2
-  -
-    type: text
-    lines: [8,9]
-  
-practice_game:
-  row1:
-    -
-      - purple
-      - squiggle
-      - empty
-      - 3
-    -
-      - red
-      - oval
-      - empty
-      - 1
-    -
-      - purple
-      - squiggle
-      - shaded
-      - 1
-  row2:
-    - 
-      - red
-      - oval
-      - shaded
-      - 2
-    - 
-      - red
-      - diamond
-      - empty
-      - 3
-    -
-      - purple
-      - squiggle
-      - empty
-      - 2
-  row3:
-    - 
-      - purple
-      - oval
-      - empty
-      - 2
-    - 
-      - green
-      - diamond
-      - filled
-      - 2
-    - 
-      - green
-      - oval
-      - shaded
-      - 2
-
+      - 
+        - green
+        - oval
+        - shaded
+        - 2
+  simple:
+    row1:
+      - 
+        - green
+        - oval

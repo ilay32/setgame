@@ -572,7 +572,6 @@ class Button(Label):
         # First redraw base Label
         #
         Label.redraw(self)
-
         # Embossed button with a 1px border.
         # TODO: this is always redrawn. Replace with a condition.
 

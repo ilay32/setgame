@@ -86,6 +86,12 @@ class GameSettings:
         numrows = self.cards_on_board / 3 #cards_on_board is either 9,12,15 or 21
         self.card_width = int(math.floor((self.main_area_width - 3 * self.card_space - 2*self.left_margin) / 3))
         self.card_height = int(math.floor((self.main_area_height - numrows * self.card_space - self.top_margin) / numrows))
+        if self.game_type == 'simple':
+            self.card_width = min(self.card_width,200)
+            self.card_height = min(self.card_height,200)
+        elif self.game_type == 'varied_number':
+            self.card_width = min(self.card_width,300)
+            self.card_height = min(self.card_height,200)
 
     def horiz_space(self):
         self.space_horiz = (self.sidebar_width -2*self.left_margin -3*self.card_width)/2
@@ -706,13 +712,11 @@ class SimpleGame(Game):
     
         
 class Practice:
-    def __init__(self,screen,lang):
+    def __init__(self,screen):
         self.starttime = pygame.time.get_ticks()
         self.pagespecs = yaml.load(open(ROOT+'/pagespecs.yml'))
-        self.lang = lang
-        self.side = 'right' if lang == 'he' else 'left'
-        self.font = pygame.font.SysFont(fontfamily,26)
-        langdir = os.path.join(ROOT,'lang')
+        self.side = 'right' if settings.lang == 'he' else 'left'
+        self.font = pygame.font.SysFont(settings.fontfamily,24)
         self.current_page = 0
         self.currently_on_screen = list()
         self.text_lines = 1
@@ -723,14 +727,15 @@ class Practice:
         self.compile_pages()
         self.numpages = len(self.pages) + 1
         self.show_page(0)
-        self.return_vars = {
-            'practice_game_start': 0,
-            'practice_sequence_end': 0,
-            'practice_correct_speed': 0,
-            'practice_wrong' : 0,
-            'prev_press' : 0,
-            'next_press' : 0
-        }
+        self.return_vars = None
+        #self.return_vars = {
+        #    'practice_game_start': 0,
+        #    'practice_sequence_end': 0,
+        #    'practice_correct_speed': 0,
+        #    'practice_wrong' : 0,
+        #    'prev_press' : 0,
+        #    'next_press' : 0
+        #}
    
     def compile_main(self):
         button_height = 50
@@ -754,7 +759,7 @@ class Practice:
                 if spec['type'] == 'text':
                     pos,elems = self.text_block(spec['lines'],vert_position) 
                 elif spec['type'] == 'cardsrow':
-                    pos,elems =  self.cards_row(spec['cards'],vert_position)
+                    pos,elems =  self.cards_row(spec['cards'][settings.game_type],vert_position)
                 page_elements += elems
                 vert_position = pos
             self.pages.append(page_elements)
@@ -765,7 +770,7 @@ class Practice:
         lines = list()
         vertpos = vertstart
         for line in data:
-            lineid = "line"+str(line)
+            lineid = "line"+str(line)+" "+settings.game_type.replace("_"," ")
             vertpos += lineheight + linespacing
             lines.append(ScreenText(lineid,translate(lineid),pygame.Rect(0,vertpos,self.main_area.width,lineheight),self.font,self.side))
             self.text_lines += 1
@@ -773,37 +778,41 @@ class Practice:
      
     def cards_row(self,data,vertstart):
         cards = list()
+        cardheight = 100
+        cardwidth  = 100 if settings.game_type == 'simple' else 200 
         positions = [
             (settings.left_margin, vertstart), 
-            (settings.left_margin + settings.card_width + settings.space_horiz, vertstart), 
-            (settings.left_margin + 2*settings.card_width + 2*settings.space_horiz, vertstart),
+            (settings.left_margin + cardwidth + settings.card_space, vertstart), 
+            (settings.left_margin + 2*cardwidth + 2*settings.card_space, vertstart),
         ]
         for i,spec in enumerate(data):
             spec = map(lambda x: str(x),spec)
-            card = Card("".join(spec), spec[0],spec[1],int(spec[3]),spec[2])
+            card = Card(spec[0],spec[1],int(spec[3]),spec[2])
             card.rect.x = positions[i][0]
             card.rect.y = positions[i][1]
-            card.image = pygame.image.load(IMG+"/" + card.name + ".png")
+            card.image = pygame.image.load(settings.cardsdir+"/" + card.name + ".png")
             cards.append(card)
-        vertend = vertstart + settings.card_height + self.vert_space
+        vertend = vertstart + cardheight + self.vert_space
         return (vertend,cards)
 
     def next_page(self,button):
         self.current_page = (self.current_page + 1) % self.numpages
         self.show_page(self.current_page)
-        self.return_vars['next_press'] += 1
+        #self.return_vars['next_press'] += 1
 
     def prev_page(self,button):
         self.current_page = (self.current_page - 1) % self.numpages
         self.show_page(self.current_page)
-        self.return_vars['prev_press'] += 1
+        #self.return_vars['prev_press'] += 1
     
     def show_page(self,pagenum):
         if pagenum == self.numpages - 1:
             self.practice_game()
         else:
+            self.next_button.current_color = (0,0,190)
+            self.prev_button.current_color = (0,0,190)
             self.render(self.pages[self.current_page] + [self.next_button,self.prev_button])
-                
+                            
     def render(self,elems):
         self.screen.remove_all()
         for elem in elems: 
@@ -827,8 +836,17 @@ class Practice:
             self.return_vars[key] = value
         else:
             raise KeyError 
+    
 
     def practice_game(self):
+        self.return_vars = settings.runner.play() 
+        practice_end = planes.gui.Label('practice_end',translate('the experiment will start now'),pygame.Rect((self.main_area.width/2) - 250,(self.main_area.height/2) - 100,500,50),(0,0,0),GREEN,self.font)
+        self.refresh(add=[practice_end])
+        pygame.time.wait(2000)
+        pygame.event.post(pygame.event.Event(pygame.QUIT)) 
+        
+
+    def _practice_game(self):
         self.register('practice_game_start',pygame.time.get_ticks() - self.starttime)
         pygame.time.set_timer(pygame.USEREVENT,settings.duration)
         time.sleep(0.1)
@@ -892,7 +910,7 @@ class Practice:
                     self.refresh(add=[card])
                 found = sorted([card.index for card in clicked_cards])
                 if found == correct:
-                    self.register('practice_correct_speed',pygame.time.get_ticks() - self.return_vars['practice_game_start'])
+                    #self.register('practice_correct_speed',pygame.time.get_ticks() - self.return_vars['practice_game_start'])
                     running = False
                     self.correct_feedback()
                 elif len(clicked_cards) == 3:
@@ -904,14 +922,14 @@ class Practice:
                     clicked_cards = list()
         
     def correct_feedback(self):
-        self.register('practice_sequence_end',pygame.time.get_ticks())
+        #self.register('practice_sequence_end',pygame.time.get_ticks())
         cor = planes.gui.Label('correct_feedback',get_display(unicode(_('correct'),'utf-8')),pygame.Rect((self.main_area.width/2) - 250,(self.main_area.height/2) - 100,500,50),(0,0,0),GREEN,settings.bigfont)
         self.refresh(add=[cor])
         pygame.time.wait(2000)
         pygame.event.post(pygame.event.Event(pygame.QUIT)) 
 
     def incorrect_feedback(self,cards):
-        self.return_vars['practice_wrong'] += 1
+        #self.return_vars['practice_wrong'] += 1
         message = ""
         props = {
             'color' : [card.color for card in cards],
@@ -944,7 +962,9 @@ class RunGame:
             'bigfontpx' : 35,
             'smallfontpx' : 20,
             'game_type' : 'simple',
-            'duration' : self.dur
+            'duration' : self.dur,
+            'runner' : self,
+            'lang' : kwargs['language']
         })
         screen = planes.Display(kwargs['frame'],kwargs['fullscreen'])
         screen.grab = False
@@ -984,7 +1004,7 @@ class RunGame:
         return ret
     
     def practice(self):
-        view = Practice(screen,dur,lang)
+        view = Practice(self.screen)
         running = True
         while running:
             events = pygame.event.get()
@@ -996,6 +1016,6 @@ class RunGame:
                     if event.key == pygame.K_ESCAPE:
                         running = False
                     ret = "keyboard interrupt"
-            screen.process(events)
+            self.screen.process(events)
         return ret
 
