@@ -48,6 +48,7 @@ class GameSettings:
         self.background = BLACK
         self.cardsdir = IMG+"/cards"
         self.card_space = 20
+        self.practice = False
 
         # possibly override them
         self.update(settings)
@@ -117,6 +118,11 @@ def triplets(n):
 def translate(s):
     return get_display(unicode(_(s),'utf-8'))
 
+def swap(l,i,j):
+    tmp = l[i]
+    l[i] = l[j]
+    l[j] = tmp
+
 '''
 Given three attributes (one from each of three cards), checks whether the
 they are either all the same, or all different
@@ -162,6 +168,9 @@ class Card(planes.Plane):
                     self.shade == other.shade
         else:
             return False
+    
+    def __str__(self):
+        return self.name
 
     def __ne__ (self, other):
         return not self.__eq__(other)
@@ -403,6 +412,7 @@ class Game:
         # GAME SCREEN ELEMENTS #
         ########################
         self.deck = []
+        self.decksize = 0
         self.model = model
         self.game_select = NOTIME
 
@@ -412,12 +422,11 @@ class Game:
         self.start_time = pygame.time.get_ticks()
         self.end_time = 0 # time game ended at
 
-
         self.actors = []
         self.in_play_cards = []
         self.clicked_cards = []
         #self.out_of_play_cards = []
-
+        
         self.sets_found = 0
         self.sets_wrong = 0 # should we take off points for these?
         self.hints_left = NUM_HINTS
@@ -438,8 +447,19 @@ class Game:
                         card_to_add = Card(color, shape, number, shade)
                         self.deck.append(card_to_add)
                         card_to_add.image = pygame.image.load(settings.cardsdir+"/" + card_to_add.name + ".png")
-        random.shuffle(self.deck)
+        self.decksize = len(self.deck)
+        if not settings.practice:
+            random.shuffle(self.deck)
+        else:
+            self.practice_shuffle()
     
+    def practice_shuffle(self):
+        l = self.decksize
+        for prime in [2,5,7]:
+            for i in range(1,l):
+                if i % prime == 0 and l - i  > 0:
+                    swap(self.deck,i,l - i )
+
     def update_card_dimensions(self):
         for card in self.deck:
            card.rect = pygame.Rect(0,0,settings.card_width,settings.card_height)
@@ -482,16 +502,21 @@ class Game:
     # Number = number of cards to add
     # Index allows adding 1 card in the same position as a removed card
     # Does not check whether we SHOULD because assumes we have checked that before calling
-    def add_new_cards (self, number, index=0):
+    def add_new_cards(self, number, index=0):
         #if not len (self.in_play_cards) + len (self.out_of_play_cards) == len (self.deck):
         i = 0
-        while i < number:
-            num = random.randint (0,len (self.deck)-1)
+        added = 0
+        while added < number:
+            if settings.practice:
+                num = (i  + int(index/2))%self.decksize - 1
+            else:
+                num = random.randint(0,self.decksize - 1)
             card = self.deck[num]
-            #if card not in self.in_play_cards and card not in self.out_of_play_cards:
-            if card not in self.in_play_cards:
-                self.in_play_cards.insert (index, card)
-                i += 1
+            if card not in self.in_play_cards and card not in self.clicked_cards:
+            #if card not in self.in_play_cards:
+                self.in_play_cards.insert(index, card)
+                added += 1
+            i += 1
 
 	# Checks if any sets on the board
     def check_if_any_sets (self):
@@ -599,9 +624,11 @@ class Game:
                         #self.out_of_play_cards.append(card)
                         index = self.in_play_cards.index(card)
                         self.in_play_cards.remove(card)
+                        if settings.practice:
+                            self.practice_shuffle()
                         if len(self.in_play_cards) < settings.initial_cards_in:
-                            self.add_new_cards (1, index)
-                    if self.sets_found % (settings.initial_cards_in + 6) == 0:
+                            self.add_new_cards(1,index)
+                    if self.sets_found % (settings.initial_cards_in + 6) == 0 and not settings.practice:
                         random.shuffle(self.deck)
                     self.set_found()
                 else:
@@ -653,7 +680,7 @@ class View:
         
         #put cards in play into a grid:
         if self.model.game != None:
-            settings.update({'cards_on_board' :  len(self.model.game.in_play_cards)})            
+            settings.update({'cards_on_board' :  len(self.model.game.in_play_cards)})
             positions = list()
             n = 0
             row = 0
@@ -702,7 +729,7 @@ class SimpleGame(Game):
     
     def sets_avail(self):
         ans = 0
-        for trip in triplets(settings.initial_cards_in):
+        for trip in triplets(len(self.in_play_cards)):
             if check_set(*[card for i,card in enumerate(self.in_play_cards) if i in trip]):
                 ans += 1 
         return ans
@@ -839,12 +866,9 @@ class Practice:
     
 
     def practice_game(self):
+        settings.update({'practice': True})
         self.return_vars = settings.runner.play() 
-        practice_end = planes.gui.Label('practice_end',translate('the experiment will start now'),pygame.Rect((self.main_area.width/2) - 250,(self.main_area.height/2) - 100,500,50),(0,0,0),GREEN,self.font)
-        self.refresh(add=[practice_end])
-        pygame.time.wait(2000)
         pygame.event.post(pygame.event.Event(pygame.QUIT)) 
-        
 
     def _practice_game(self):
         self.register('practice_game_start',pygame.time.get_ticks() - self.starttime)
@@ -971,7 +995,7 @@ class RunGame:
         screen.image.fill(BLACK)
         self.screen = screen
     
-    def runner(self) :
+    def run(self) :
         return eval('self.'+self.mode)
     
     def play(self):
@@ -986,6 +1010,7 @@ class RunGame:
                 if event.type == pygame.QUIT:
                     running = False
                     ret =  {
+                        "score" : view.model.game.score,
                         "sets_found" : view.model.game.sets_found,
                         "sets_wrong" : view.model.game.sets_wrong
                     }
@@ -1018,4 +1043,38 @@ class RunGame:
                     ret = "keyboard interrupt"
             self.screen.process(events)
         return ret
+    
+    def feedback_screen(self,res,pr):
+        lines = list()
+        lines.append(translate("Score: %d") % (res['score']))
+        if not settings.practice:
+            if  pr > res['score']:
+                lines.append(translate("Personal Record: %d") % pr)
+            elif res['score'] > 0:
+                pr = res['score']
+                lines.append(translate("Good! Your new record: %d") % pr)
+            if res['sets_found'] > 0:
+                speed = settings.duration / 1000 * res['sets_found']
+                if speed < 10:
+                    lines.append(translate("Excellent score. I can't believe you can do any better."))
+                elif speed < 25:
+                    lines.append(translate("Very good score. See if you can do better."))
+                elif speed < 40:
+                    lines.append(translate("Pretty good score. But you can probably improve."))
+                else:
+                    lines.append(translate("This is a little slow. Try to do better next time."))
+
+
+
+        feedbacks = [ScreenText('feedback_message_'+str(i),line,pygame.Rect(0,(settings.window_height/2 - 300) + i*30,settings.window_width,300),settings.smallfont,'center') for i,line in enumerate(lines)]
+
+        self.screen.remove_all()
+        for fee in feedbacks:
+            self.screen.sub(fee)
+        self.screen.update()
+        self.screen.render()
+        pygame.display.flip()
+        time.sleep(3.5)
+        return 
+        return
 

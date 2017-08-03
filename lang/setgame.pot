@@ -55,6 +55,27 @@ msgstr ""
 msgid "line9 simple"
 msgstr ""
 
+msgid "line10 simple"
+msgstr ""
+
+msgid "line11 simple"
+msgstr ""
+
+msgid "line12 simple"
+msgstr ""
+
+msgid "line13 simple"
+msgstr ""
+
+msgid "line14 simple"
+msgstr ""
+
+msgid "line15 simple"
+msgstr ""
+
+msgid "line16 simple"
+msgstr ""
+
 
 msgid "next"
 msgstr ""
@@ -79,3 +100,23 @@ msgstr ""
 
 msgid "Score: %d"
 msgstr ""
+
+msgid "Personal Record: %d"
+msgstr ""
+
+msgid "Good! Your new record: %d"
+msgstr ""
+
+msgid "Excellent score. I can't believe you can do any better."
+msgstr ""
+
+msgid "Very good score. See if you can do better."
+msgstr ""
+
+msgid "Pretty good score. But you can probably improve."
+msgstr ""
+
+msgid "This is a little slow. Try to do better next time."
+msgstr ""
+
+

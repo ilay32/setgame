@@ -68,6 +68,9 @@ class ScreenText(gui.Label):
                 text = pad +  text + " "
             elif align == 'left':
                 text = " " + text + pad
+            elif align == 'center':
+               pad = " "*int(math.floor(len(pad)/2))
+               text = pad + text + pad
 
         gui.Label.__init__(self, name, text, rect, self.background_color, self.text_color, font)
     def update_text(self, text):

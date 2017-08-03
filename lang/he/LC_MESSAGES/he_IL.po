@@ -13,7 +13,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "line1 varied number"
-msgstr "במשחק הקבוצות צריך למצוא קבוצות"
+msgstr "במשחק הקבוצות צריך למצוא סדרות של שלושה קלפים."
 
 msgid "line2 varied number"
 msgstr "כל קלף מתאפיין בארבע תכונות: צורה, צבע מספר ומילוי"
@@ -40,31 +40,54 @@ msgid "line9 varied number"
 msgstr ""
 
 msgid "line1 simple"
-msgstr "במשחק הקבוצות צריך למצוא קבוצות"
+msgstr "במשחק הקבוצות צריך למצוא סדרות של שלושה קלפים."
 
 msgid "line2 simple"
-msgstr "כל קלף מתאפיין בשלוש תכונות: צבע, צורה ומילוי"
+msgstr "כל קלף מתאפיין בשלוש תכונות: צבע, צורה ומילוי."
 
 msgid "line3 simple"
-msgstr "קבוצה היא סדרה של שלושה קלפים שבה כל תכונה או שווה"
+msgstr "סדרה חוקית היא סדרה שעונה על שלושת התנאים האלה:"
 
 msgid "line4 simple"
-msgstr "בכל הקלפים או שונה בכולם, כלומר אין תכונה שחוזרת בדיוק פעמיים."
+msgstr "1) לשלושת הקלפים אותה צורה, או שלשלושתם צורה שונה."
 
 msgid "line5 simple"
-msgstr "למשל, זאת קבוצה:"
+msgstr "2) לשלושת הקלפים אותו הצבע, או שלשלושתם צבע שונה."
 
 msgid "line6 simple"
-msgstr "אבל זאת לא:"
+msgstr "3) לשלושת הקלפים אותו המילוי, או שלשלושתם מילוי שונה."
 
 msgid "line7 simple"
-msgstr "כי הצורה והמילוי שווים בשני קלפים."
+msgstr "למשל זאת סדרה חוקית:"
 
 msgid "line8 simple"
-msgstr ""
+msgstr "אבל זאת לא:"
 
 msgid "line9 simple"
+msgstr "כי הצורה והמילוי שווים בשני קלפים."
+
+msgid "line10 simple"
+msgstr "בחירת כל קלף מתבצעת באמצעות העכבר."
+
+msgid "line11 simple"
+msgstr "לאחר שתקיש\\י על שלושה קלפים שמהווים סדרה חוקית,"
+
+msgid "line12 simple"
+msgstr "שלושת הקלפים יתחלפו באחרים ותוכל\\י להמשיך לצבור סדרות."
+
+msgid "line13 simple"
+msgstr "בצד ימין של מסך המשחק יופיעו הניקוד שצברת ושעון שמראה כמה זמן נשאר."
+
+msgid "line14 simple"
+msgstr "הניקוד ניתן על סמך כמות הסדרות שמצאת והזמן שלקח לך למצוא כל סדרה."
+
+msgid "line15 simple"
+msgstr "שימ\\י לב,  מטרתך היא לצבור כמה שיותר סדרות בזמן המוקצב למשחק."
+
+msgid "line16 simple"
 msgstr ""
+"במסך הבא יתחיל שלב אימון במשחק הקבוצות,  ודא\\י שאת\\ה מבינ\\ה את כל החוקים "
+"בסיומו."
 
 msgid "next"
 msgstr "המשך"
@@ -90,6 +113,27 @@ msgstr "קבוצות זמינות:  d%"
 msgid "Score: %d"
 msgstr "ניקוד: d%"
 
+msgid "Personal Record: %d"
+msgstr "שיאך האישי: d%"
+
+msgid "Good! Your new record: %d"
+msgstr "שיא חדש! d%"
+
+msgid "Excellent score. I can't believe you can do any better."
+msgstr "תוצאה מצוינת. לא נראה לי אפשר לשפר."
+
+msgid "Very good score. See if you can do better."
+msgstr "טוב מאוד. נראה אם תצליח\\י לשפר"
+
+msgid "Pretty good score. But you can probably improve."
+msgstr "תוצאה טובה, אבל את\\ה בטח יכול\\ה יותר."
+
+msgid "This is a little slow. Try to do better next time."
+msgstr "זה קצת לאט. בהחלט יש מקום לשיפור."
+
+#~ msgid "personal record: %d"
+#~ msgstr "שיאך האישי: d%"
+
 #~ msgid "line1"
 #~ msgstr "במשחק הקבוצות צריך למצוא קבוצות"
 
@@ -97,7 +141,9 @@ msgstr "ניקוד: d%"
 #~ msgstr "כל קלף מתאפיין בארבע תכונות: צבע, צורה, מספר ומילוי"
 
 #~ msgid "line3"
-#~ msgstr "קבוצה היא סדרה של שלושה קלפים שבה כל תכונה או שווה בכל הקלפים או שונה בכולם"
+#~ msgstr ""
+#~ "קבוצה היא סדרה של שלושה קלפים שבה כל תכונה או שווה בכל הקלפים או שונה "
+#~ "בכולם"
 
 #~ msgid "line4"
 #~ msgstr "שורה סתם"

@@ -1,12 +1,12 @@
 page1: 
   -
     type: text
-    lines: [1,2,3,4] 
+    lines: [1,2,3,4,5,6] 
 
 page2:
   - 
     type: text
-    lines: [5]
+    lines: [7]
   
   - 
     type: cardsrow
@@ -45,7 +45,7 @@ page2:
           - 1
   -
     type: text
-    lines: [6]
+    lines: [8]
   
   - 
     type: cardsrow
@@ -84,8 +84,13 @@ page2:
           - 1
   -
     type: text
-    lines: [7,8]
-  
+    lines: [9]
+
+page3:
+  -
+    type: text
+    lines: [10,11,12,13,14,15]
+
 practice_game:
   varied_number:
     row1:
