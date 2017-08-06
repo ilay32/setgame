@@ -38,8 +38,9 @@ class GameSettings:
         self.fontfamily = "arial"
         self.bigfontpx = 40
         self.smallfontpx = 20
-        self.top_margin = 50
-        self.left_margin = 50
+        self.sidebar_width = 200
+        #self.top_margin = 50
+        #self.left_margin = 50
         self.colors = ['green', 'red', 'purple']
         self.shapes = ['oval', 'diamond', 'squiggle']
         self.numbers = [1,2,3]
@@ -48,6 +49,7 @@ class GameSettings:
         self.background = BLACK
         self.cardsdir = IMG+"/cards"
         self.card_space = 20
+        #self.space_horiz = 
         self.practice = False
 
         # possibly override them
@@ -57,45 +59,48 @@ class GameSettings:
         self.bigfont = pygame.font.SysFont(self.fontfamily, self.bigfontpx)
         self.smallfont = pygame.font.SysFont(self.fontfamily,self.smallfontpx)
 
-        # layout
-        self.sidebar_width = 0.25*self.window_width
-        self.main_area_width = 0.75*self.window_width
-        self.main_area_height = self.window_height - self.smallfontpx  - 20
-        self.footer = pygame.Rect(self.left_margin,self.main_area_height,self.main_area_width,self.smallfontpx + 20)
+        self.maxcardwidth = 300 if self.game_type == 'varied_number' else 200
+        self.maxcardheight = 200
 
+        
         if self.game_type == 'simple':
             self.initial_cards_in = 9
             self.numbers = [1]
             self.cardsdir = IMG+"/cards/simple"
         else:
             self.initial_cards_in = 12
-            self.space_horiz = self.horiz_space()
+            #self.space_horiz = self.horiz_space()
         self.cards_on_board = self.initial_cards_in 
-        self.card_dimensions() 
+        self.numrows = self.cards_on_board / 3 
+        
+        # layout
+        self.main_area_width = min(0.75*self.window_width,3*(self.maxcardwidth + self.card_space))
+        self.main_area_height = min(self.window_height - self.smallfontpx  - 20, 3 * (self.maxcardheight + self.card_space))
+        self.left_margin = int(math.floor((self.window_width - (self.main_area_width + self.sidebar_width))/2))
+        self.top_margin = int(math.floor((self.window_height - self.main_area_height)/2))
 
+        self.card_dimensions() 
+        self.footer = pygame.Rect(self.left_margin,self.main_area_height + self.top_margin,self.main_area_width,self.smallfontpx + 20)
+    
     def update(self,newsettings):
         if newsettings:
             for key,val in newsettings.iteritems(): 
                 self.__dict__[key] = val
         if 'card_width' in newsettings:
-            if self.game_type == 'simple':
-                self.simple_card_dimensions()
-            else:
-                self.space_horiz = self.horiz_space()
-
+            self.card_dimensions()
+            #if self.game_type == 'simple':
+            #    self.simple_card_dimensions()
+            #else:
+                #self.space_horiz = self.horiz_space()
+    
     def card_dimensions(self):
-        numrows = self.cards_on_board / 3 #cards_on_board is either 9,12,15 or 21
-        self.card_width = int(math.floor((self.main_area_width - 3 * self.card_space - 2*self.left_margin) / 3))
-        self.card_height = int(math.floor((self.main_area_height - numrows * self.card_space - self.top_margin) / numrows))
-        if self.game_type == 'simple':
-            self.card_width = min(self.card_width,200)
-            self.card_height = min(self.card_height,200)
-        elif self.game_type == 'varied_number':
-            self.card_width = min(self.card_width,300)
-            self.card_height = min(self.card_height,200)
-
-    def horiz_space(self):
-        self.space_horiz = (self.sidebar_width -2*self.left_margin -3*self.card_width)/2
+        card_width = int(math.floor((self.main_area_width - 3 * self.card_space ) / 3))
+        card_height = int(math.floor((self.main_area_height - self.numrows * self.card_space) / self.numrows))
+        self.card_width = min(card_width,self.maxcardwidth)
+        self.card_height = min(card_height,self.maxcardheight)
+            
+    #def horiz_space(self):
+    #    self.space_horiz = (self.sidebar_width -2*self.left_margin -3*self.card_width)/2
 
 '''
 Given three cards, checks whether they form a Set
@@ -485,7 +490,8 @@ class Game:
         self.time_box = TimeBox ("time_box", pygame.Rect (0, -settings.window_height, settings.window_width, settings.window_height), self.game_select)
 
         #### PAUSE SCREEN BUTTONS ####
-        message_width = 3*settings.card_width + 2*settings.space_horiz # width of playing field
+        #message_width = 3*settings.card_width + 2*settings.space_horiz # width of playing field
+        message_width = 3*settings.card_width + 2*settings.card_space # width of playing field
         self.play_button = PlayButton ("play_button", pygame.Rect (2*message_width/5 - 50, settings.window_height - 300, 100, 100), PlayButton.clicked, self)
 
         self.restart_button = RestartButton ("restart_button", pygame.Rect (3*message_width/5 - 50, settings.window_height - 300, 100, 100), RestartButton.clicked, self) 
@@ -551,7 +557,8 @@ class Game:
             self.actors += self.gamelabels + self.gamebuttons
             self.hints_left_label.update_text ("Hints Remaining: " + str (self.hints_left))
             self.left_in_deck_label.update_text ("Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))))
-            message_box = planes.Plane ('message_box', pygame.Rect (settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.space_horiz, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)))
+            #message_box = planes.Plane ('message_box', pygame.Rect (settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.space_horiz, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)))
+            message_box = planes.Plane ('message_box', pygame.Rect (settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.card_space, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)))
             message_box.image.fill ((0,0,0))
             message_texts = []
 
@@ -584,12 +591,14 @@ class Game:
                     stats = lose_stats
                 
                 lines = stats.split ("\n")
-                box_width = 3*settings.card_width + 2*settings.space_horiz
+                #box_width = 3*settings.card_width + 2*settings.space_horiz
+                box_width = 3*settings.card_width + 2*settings.card_space
                 for line in lines:
                     message_texts.append(ScreenText (line, line, pygame.Rect(settings.left_margin, settings.top_margin + 50*(lines.index(line)+1) ,box_width, 45), settings.bigfont))
 
             elif self.paused_time_at != 0 : #game is paused
-                message_texts.append (ScreenText ("message_text", "Game Paused", pygame.Rect(settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.space_horiz, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)), settings.bigfont))
+                #message_texts.append (ScreenText ("message_text", "Game Paused", pygame.Rect(settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.space_horiz, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)), settings.bigfont))
+                message_texts.append (ScreenText ("message_text", "Game Paused", pygame.Rect(settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.card_space, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)), settings.bigfont))
             self.actors.append (message_box)
             self.actors += message_texts
             self.actors += self.pausebuttons
@@ -712,7 +721,7 @@ class SimpleGame(Game):
     
     def compile_elements(self):
         self.score_label = ScreenText("score_label",translate("Score: %d") % 0,pygame.Rect(3*settings.window_width/4, 290, settings.window_width/4, 50),settings.smallfont)
-        self.available = ScreenText("available_sets_label",translate("Sets on the Board: %d")  % self.sets_avail(),settings.footer,settings.smallfont)
+        self.available = ScreenText("available_sets_label",translate("Sets on the Board: %d")  % self.sets_avail(),settings.footer,settings.smallfont,'center')
         self.time_label = ScreenText ("time_label", "", pygame.Rect (3*settings.window_width/4, 220, settings.window_width/4, 100), settings.smallfont)
         self.time_box = TimeBox ("time_box", pygame.Rect (0, -settings.window_height, settings.window_width, settings.window_height), self.game_select)
         #message_width = 3*settings.card_width + 2*settings.space_horiz # width of playing field
