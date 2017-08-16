@@ -604,7 +604,7 @@ class Game:
             self.actors += self.pausebuttons
         
         # game in play
-        else:
+        else: 
             self.time_box.update()
             self.actors = [self.time_box]
 
@@ -653,7 +653,8 @@ class Game:
         self.sets_found_label.update_text("Sets: " + str(self.sets_found))
         
     def update_game_data(self): 
-        self.time_label.update_text("Time: " + format_secs((settings.duration - (pygame.time.get_ticks() - self.start_time - self.pause_time))/ 1000))
+        if settings.show_timer == "yes":
+            self.time_label.update_text("Time: " + format_secs((settings.duration - (pygame.time.get_ticks() - self.start_time - self.pause_time))/ 1000))
         self.hints_left_label.update_text ("Hints Remaining: " + str (self.hints_left))
         #self.left_in_deck_label.update_text ("Deck: " + str (len (self.deck) - (len (self.in_play_cards) + len (self.out_of_play_cards))))
     
@@ -726,7 +727,9 @@ class SimpleGame(Game):
         self.time_box = TimeBox ("time_box", pygame.Rect (0, -settings.window_height, settings.window_width, settings.window_height), self.game_select)
         #message_width = 3*settings.card_width + 2*settings.space_horiz # width of playing field
         self.gamebuttons = []
-        self.gamelabels = [self.score_label, self.time_label,self.available]
+        self.gamelabels = [self.score_label, self.available]
+        if settings.show_timer == "yes":
+            self.gamelabels.append(self.time_label)
         self.pausebuttons = []
     
     def set_found(self):
@@ -997,7 +1000,8 @@ class RunGame:
             'game_type' : 'simple',
             'duration' : self.dur,
             'runner' : self,
-            'lang' : kwargs['language']
+            'lang' : kwargs['language'],
+            'show_timer' : kwargs['show_timer']
         })
         screen = planes.Display(kwargs['frame'],kwargs['fullscreen'])
         screen.grab = False
@@ -1026,7 +1030,7 @@ class RunGame:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         running = False
-                    ret = "keyboard interrupt"
+                        ret = "keyboard interrupt"
 
             self.screen.process(events)
             model.update()
@@ -1047,9 +1051,9 @@ class RunGame:
                     running = False
                     ret =  view.return_vars            
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                    if event.key == pygame.K_ESCAPE and pygame.key.get_mods() & pygame.KMOD_SHIFT:
                         running = False
-                    ret = "keyboard interrupt"
+                        ret = "keyboard interrupt"
             self.screen.process(events)
         return ret
     
@@ -1085,5 +1089,4 @@ class RunGame:
         pygame.display.flip()
         time.sleep(3.5)
         return 
-        return
 
