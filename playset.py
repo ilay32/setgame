@@ -882,81 +882,7 @@ class Practice:
         self.return_vars = settings.runner.play() 
         pygame.event.post(pygame.event.Event(pygame.QUIT)) 
 
-    def _practice_game(self):
-        self.register('practice_game_start',pygame.time.get_ticks() - self.starttime)
-        pygame.time.set_timer(pygame.USEREVENT,settings.duration)
-        time.sleep(0.1)
-        self.screen.remove_all()
-        cards = list()
-        highlights = list()
-        clicked_cards = list()
-        vert_position = self.vert_space
-        correct = [3,5,7]
-        running = True
-        foundit = False
-        
-        #collect the cards
-        cindex = 0
-        for rowname,cardspecs in self.pagespecs['practice_game'].iteritems():
-            pos,threecards = self.cards_row(cardspecs,vert_position)
-            for card in threecards:
-                card.index = cindex
-                cards.append(card)
-                clicked_box = planes.Plane ("clickbox" + str(card.index), pygame.Rect(card.rect.x-5, card.rect.y-5, card.rect.width + 10, card.rect.height + 10), False, False)
-
-                clicked_box.image = pygame.image.load (IMG+"/clickbox.png")
-                clicked_box.index = cindex
-                cindex += 1
-                highlights.append(clicked_box)
-            vert_position = pos
-        self.render([self.prev_button,self.next_button] + cards) 
-
-        #game loop
-        while running:
-            clicked_changed = False
-            events = pygame.event.get()
-            for event in events:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    running = False
-                    pygame.quit()
-                if event.type == pygame.USEREVENT :
-                    for card in clicked_cards:
-                        self.refresh(remove=[highlights[card.index]])
-                        card.been_clicked = False
-                    clicked_cards = list()
-                    for cindex in correct:
-                        card = cards[cindex]
-                        self.refresh(add=[highlights[cindex]],remove=[card])
-                        self.refresh(add=[card])
-                        pygame.time.wait(1000)
-                        clicked_cards.append(card)
-                    clicked_changed = True
-            
-            self.screen.process(events)
-                         
-            for card in cards:
-                if card.been_clicked and card not in clicked_cards:
-                    clicked_changed = True
-                    self.refresh(remove=[self.incor])
-                    clicked_cards.append(card)
-                card.update()
-            if clicked_changed: 
-                for card in clicked_cards:
-                    self.refresh(add=[highlights[card.index]],remove=[card])
-                    self.refresh(add=[card])
-                found = sorted([card.index for card in clicked_cards])
-                if found == correct:
-                    #self.register('practice_correct_speed',pygame.time.get_ticks() - self.return_vars['practice_game_start'])
-                    running = False
-                    self.correct_feedback()
-                elif len(clicked_cards) == 3:
-                    self.incor.text = self.incorrect_feedback(clicked_cards)
-                    self.refresh(add=[self.incor])
-                    for card in clicked_cards:
-                        self.refresh(remove=[highlights[card.index]])
-                        card.been_clicked = False
-                    clicked_cards = list()
-        
+       
     def correct_feedback(self):
         #self.register('practice_sequence_end',pygame.time.get_ticks())
         cor = planes.gui.Label('correct_feedback',get_display(unicode(_('correct'),'utf-8')),pygame.Rect((self.main_area.width/2) - 250,(self.main_area.height/2) - 100,500,50),(0,0,0),GREEN,settings.bigfont)
@@ -1027,10 +953,10 @@ class RunGame:
                         "sets_found" : view.model.game.sets_found,
                         "sets_wrong" : view.model.game.sets_wrong
                     }
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
-                        running = False
-                        ret = "keyboard interrupt"
+                #if event.type == pygame.KEYDOWN:
+                #    if event.key == pygame.K_ESCAPE:
+                #        running = False
+                #        ret = "keyboard interrupt"
 
             self.screen.process(events)
             model.update()
@@ -1050,10 +976,10 @@ class RunGame:
                 if event.type == pygame.QUIT:
                     running = False
                     ret =  view.return_vars            
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE and pygame.key.get_mods() & pygame.KMOD_SHIFT:
-                        running = False
-                        ret = "keyboard interrupt"
+                #if event.type == pygame.KEYDOWN:
+                #    if event.key == pygame.K_ESCAPE and pygame.key.get_mods() & pygame.KMOD_SHIFT:
+                #        running = False
+                #        ret = "keyboard interrupt"
             self.screen.process(events)
         return ret
     
