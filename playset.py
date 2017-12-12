@@ -523,6 +523,11 @@ class Game:
                 self.in_play_cards.insert(index, card)
                 added += 1
             i += 1
+        # verify at list one set available
+        while self.sets_avail() < 1:
+            self.in_play_cards.pop()
+            self.add_new_cards(1)
+
 
 	# Checks if any sets on the board
     def check_if_any_sets (self):
@@ -987,21 +992,20 @@ class RunGame:
         lines = list()
         lines.append(translate("Score: %d") % (res['score']))
         if not settings.practice:
-            if  pr > res['score']:
+            if  pr >= res['score']:
                 lines.append(translate("Personal Record: %d") % pr)
-            elif res['score'] > 0:
+            else:
                 pr = res['score']
                 lines.append(translate("Good! Your new record: %d") % pr)
-            if res['sets_found'] > 0:
-                speed = settings.duration / 1000 * res['sets_found']
-                if speed < 10:
-                    lines.append(translate("Excellent score. I can't believe you can do any better."))
-                elif speed < 25:
-                    lines.append(translate("Very good score. See if you can do better."))
-                elif speed < 40:
-                    lines.append(translate("Pretty good score. But you can probably improve."))
-                else:
-                    lines.append(translate("This is a little slow. Try to do better next time."))
+            speed = float(res['sets_found']) / (settings.duration/1000)
+            if speed > 0.8:
+                lines.append(translate("Excellent score. I can't believe you can do any better."))
+            elif speed > 0.5:
+                lines.append(translate("Very good score. See if you can do better."))
+            elif speed > 0.2:
+                lines.append(translate("Pretty good score. But you can probably improve."))
+            else:
+                lines.append(translate("This is a little slow. Try to do better next time."))
 
 
 
@@ -1014,5 +1018,4 @@ class RunGame:
         self.screen.render()
         pygame.display.flip()
         time.sleep(3.5)
-        return 
-
+        return pr
