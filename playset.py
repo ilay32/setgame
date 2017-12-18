@@ -740,7 +740,7 @@ class SimpleGame(Game):
     def set_found(self):
         self.last_detect = self.detect_time
         self.detect_time = pygame.time.get_ticks()
-        self.score += int(round(100/((self.detect_time - self.last_detect)/1000)))
+        self.score += int(round(100/(float(self.detect_time - self.last_detect)/1000)))
         self.score_label.update_text(translate("Score: %d")  % self.score)
         self.available.update_text(translate("Sets on the Board: %d")  % self.sets_avail())
     
