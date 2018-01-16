@@ -604,7 +604,7 @@ class Game:
             elif self.paused_time_at != 0 : #game is paused
                 #message_texts.append (ScreenText ("message_text", "Game Paused", pygame.Rect(settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.space_horiz, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)), settings.bigfont))
                 message_texts.append (ScreenText ("message_text", "Game Paused", pygame.Rect(settings.left_margin, settings.top_margin, 3*settings.card_width + 2*settings.card_space, 4*settings.card_height + 3*((settings.window_height - 4*settings.card_height - 2*settings.top_margin) / 3)), settings.bigfont))
-            self.actors.append (message_box)
+            self.actors.append(message_box)
             self.actors += message_texts
             self.actors += self.pausebuttons
         
@@ -616,18 +616,22 @@ class Game:
             #check which cards are clicked
             self.clicked_cards = []
             for card in self.in_play_cards:
-                self.actors.append (card)
+                self.actors.append(card)
                 if card.been_clicked:
                     self.clicked_cards.append(card)
                 card.update()
 
             #add click boxes
             for card in self.clicked_cards:
+                if card not in self.in_play_cards:
+                    card.been_clicked = False
+                    self.clicked_cards.remove(card);
+                    continue;
                 clicked_box = planes.Plane ("box" + card.name, pygame.Rect (card.rect.x-5, card.rect.y-5, card.rect.width + 10, card.rect.height + 10), False, False) 
                 im =  pygame.image.load (IMG+"/clickbox.png") 
                 im = pygame.transform.scale(im,(settings.card_width+10,settings.card_height+10))
                 clicked_box.image = im
-                self.actors.insert (1, clicked_box)
+                self.actors.insert(1, clicked_box)
             
             #check for sets
             if len(self.clicked_cards) == 3:
@@ -997,7 +1001,7 @@ class RunGame:
             else:
                 pr = res['score']
                 lines.append(translate("Good! Your new record: %d") % pr)
-            speed = float(res['sets_found']) / (settings.duration/1000)
+            speed = float(res['sets_found']) / float(settings.duration)/1000
             if speed > 0.8:
                 lines.append(translate("Excellent score. I can't believe you can do any better."))
             elif speed > 0.5:
